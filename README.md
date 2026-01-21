@@ -4,8 +4,8 @@
 
 Convert your high-resolution music library to iPod-compatible formats while maintaining full control over every album's conversion settings. Yangon scans your library, generates a decision spreadsheet, and applies your choices with a professional TUI dashboard.
 
-<!-- Screenshot: Main TUI dashboard during conversion -->
-![TUI Dashboard](screenshots/dashboard.png)
+<!-- TODO: Add screenshot of main TUI dashboard during conversion -->
+<!-- ![TUI Dashboard](YOUR_IMAGE_HOST_URL/dashboard.png) -->
 
 ---
 
@@ -21,8 +21,8 @@ Convert your high-resolution music library to iPod-compatible formats while main
 - **TSV** (Tab-separated) - Edit in any text editor, handles commas in metadata
 - **CSV** (Comma-separated) - Universal compatibility
 
-<!-- Screenshot: XLSX plan file in Excel showing album decisions -->
-![XLSX Plan](screenshots/xlsx-plan.png)
+<!-- TODO: Add screenshot of XLSX plan file in Excel showing album decisions -->
+<!-- ![XLSX Plan](YOUR_IMAGE_HOST_URL/xlsx-plan.png) -->
 
 ### Audio Processing
 - **ALAC** - Lossless Apple codec, preserves or downconverts to Red Book (16-bit/44.1kHz)
@@ -37,8 +37,8 @@ Convert your high-resolution music library to iPod-compatible formats while main
 - Error summary and activity log
 - Compact mode for small terminals
 
-<!-- Screenshot: Compact TUI mode -->
-![Compact TUI](screenshots/compact-tui.png)
+<!-- TODO: Add screenshot of compact TUI mode -->
+<!-- ![Compact TUI](YOUR_IMAGE_HOST_URL/compact-tui.png) -->
 
 ### Performance
 - Parallel scanning with ThreadPoolExecutor (I/O-bound)
@@ -106,8 +106,8 @@ yangon scan --library /path/to/music --plan plan.xlsx
 yangon scan --library /path/to/music --plan plan.tsv
 ```
 
-<!-- Screenshot: Scan command output -->
-![Scan Output](screenshots/scan-output.png)
+<!-- TODO: Add screenshot of scan command output -->
+<!-- ![Scan Output](YOUR_IMAGE_HOST_URL/scan-output.png) -->
 
 ### 2. Review and Edit the Plan
 
@@ -142,8 +142,8 @@ yangon apply --plan plan.xlsx --out /path/to/ipod/Music --dry-run
 yangon apply --plan plan.xlsx --out /path/to/ipod/Music --force
 ```
 
-<!-- Screenshot: Apply command with progress -->
-![Apply Progress](screenshots/apply-progress.png)
+<!-- TODO: Add screenshot of apply command with progress -->
+<!-- ![Apply Progress](YOUR_IMAGE_HOST_URL/apply-progress.png) -->
 
 ---
 
