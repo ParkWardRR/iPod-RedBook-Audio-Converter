@@ -1,0 +1,8 @@
+# Screenshots
+
+Add screenshots here:
+- dashboard.png - Main TUI dashboard during conversion
+- xlsx-plan.png - XLSX plan file in Excel showing album decisions
+- compact-tui.png - Compact TUI mode
+- scan-output.png - Scan command output
+- apply-progress.png - Apply command with progress
