@@ -1,1 +1,1 @@
-"""Tests for yangon."""
+"""Tests for ipodrb."""

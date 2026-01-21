@@ -36,4 +36,4 @@ Thumbs.db
 # Project specific
 *.xlsx
 *.db
-.yangon_cache.db
+.ipodrb_cache.db

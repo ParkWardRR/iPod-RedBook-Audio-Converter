@@ -82,8 +82,6 @@ pip install -e .
 
 ### Verify install
 
-> Replace `ipodrb` below with the actual CLI name installed by the project.
-
 ```bash
 ipodrb --version
 ipodrb --help
@@ -112,7 +110,7 @@ Open the plan and set the album actions you want:
 | Column | What it controls |
 |---|---|
 | `user_action` | Album action: `ALAC_PRESERVE`, `ALAC_16_44`, `AAC`, `PASS_MP3`, `SKIP` |
-| `aac_bitrate_kbps` | AAC bitrate: `128`, `192`, `256`, `320` |
+| `aac_target_kbps` | AAC bitrate: `128`, `192`, `256`, `320` |
 | `skip` | `true` to skip the album |
 
 Tip: the XLSX format includes a Reference tab listing valid values.
@@ -220,41 +218,41 @@ ruff check .
 ## Red Book (CD-DA) explained
 
 > [!TIP]
-> In this repo, “Red Book” means **CD-quality audio**: 16-bit / 44.1 kHz PCM—the baseline format defined for audio CDs. [web:15][web:2]
+> In this repo, "Red Book" means **CD-quality audio**: 16-bit / 44.1 kHz PCM—the baseline format defined for audio CDs.
 
-### What “Red Book” is
-“Red Book” is the colloquial name for the original **Compact Disc Digital Audio (CD‑DA)** specification created by Philips and Sony and published in 1980. [web:15][web:10]  
-It defines the *logical* audio format for an audio CD: two-channel, 16-bit PCM sampled at 44.1 kHz. [web:15][web:2]  
-In standards terms, CD‑DA is covered by IEC 60908 (“Audio recording — Compact disc digital audio system”). [web:7][web:13]
+### What "Red Book" is
+"Red Book" is the colloquial name for the original **Compact Disc Digital Audio (CD‑DA)** specification created by Philips and Sony and published in 1980.
+It defines the *logical* audio format for an audio CD: two-channel, 16-bit PCM sampled at 44.1 kHz.
+In standards terms, CD‑DA is covered by IEC 60908 ("Audio recording — Compact disc digital audio system").
 
 ### Why 44.1 kHz and 16-bit?
-A 44.1 kHz sampling rate supports audio up to 22.05 kHz by the Nyquist–Shannon theorem, which was chosen to cover the traditional “20 Hz–20 kHz” audible range. [web:14]  
-Historically, 44.1 kHz was inherited from early studio-to-mastering workflows that used PCM adaptors based on video recorders, and that legacy carried into the CD specification. [web:14][web:8]
+A 44.1 kHz sampling rate supports audio up to 22.05 kHz by the Nyquist–Shannon theorem, which was chosen to cover the traditional "20 Hz–20 kHz" audible range.
+Historically, 44.1 kHz was inherited from early studio-to-mastering workflows that used PCM adaptors based on video recorders, and that legacy carried into the CD specification.
 
 ### Core technical parameters
 
 | Parameter | Red Book value |
 |---|---|
-| Channels | 2-channel stereo PCM (standard CD‑DA) [web:2][web:15] |
-| Bit depth | 16-bit linear PCM [web:2][web:15] |
-| Sample rate | 44.1 kHz [web:2][web:15] |
-| Audio data rate | 1,411.2 kbps (2 × 44,100 × 16) [web:2] |
-| Track count (typical limit) | Up to 99 tracks is commonly cited for CD‑DA. [web:10][web:3] |
-| Disc/play time (historical target) | ~74 minutes is commonly referenced for early CD design targets/spec summaries. [web:10][web:4] |
+| Channels | 2-channel stereo PCM |
+| Bit depth | 16-bit linear PCM |
+| Sample rate | 44.1 kHz |
+| Audio data rate | 1,411.2 kbps (2 × 44,100 × 16) |
+| Track count (typical limit) | Up to 99 tracks |
+| Disc/play time (historical target) | ~74 minutes |
 
 ### A short history (high level)
 
 | Year | What happened |
 |---:|---|
-| 1979–1980 | Philips and Sony aligned on key CD‑DA choices like 44.1 kHz sampling and 16-bit quantization during joint development meetings. [web:4] |
-| 1980 | The CD‑DA spec was published (the “Red Book” document). [web:10][web:15] |
-| 1999 | IEC 60908 was published as an IEC standard defining CD‑DA interchangeability parameters for discs and players. [web:7][web:13] |
+| 1979–1980 | Philips and Sony aligned on key CD‑DA choices like 44.1 kHz sampling and 16-bit quantization during joint development meetings. |
+| 1980 | The CD‑DA spec was published (the "Red Book" document). |
+| 1999 | IEC 60908 was published as an IEC standard defining CD‑DA interchangeability parameters for discs and players. |
 
 <details>
 <summary><strong>Where the name comes from (Rainbow Books)</strong></summary>
 
-“Red Book” is named after the color of its cover and is part of the broader “Rainbow Books” family of CD-related specifications. [web:3][web:10]  
-Different colors historically correspond to different CD formats (audio CD, CD-ROM, recordable variants, etc.). [web:3]
+"Red Book" is named after the color of its cover and is part of the broader "Rainbow Books" family of CD-related specifications.
+Different colors historically correspond to different CD formats (audio CD, CD-ROM, recordable variants, etc.).
 
 </details>
 

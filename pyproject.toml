@@ -1,5 +1,5 @@
 [project]
-name = "yangon"
+name = "ipodrb"
 version = "0.1.0"
 description = "iPod-compatible audio library converter with XLSX-based album planning"
 readme = "README.md"
@@ -22,7 +22,7 @@ dev = [
 ]
 
 [project.scripts]
-yangon = "yangon.cli:cli"
+ipodrb = "ipodrb.cli:cli"
 
 [build-system]
 requires = ["hatchling"]
