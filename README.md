@@ -214,6 +214,12 @@ ruff check .
 ``` 
 
 ---
+ 
+## Platform support
+
+This project has only been tested on **macOS Tahoe (latest)** so far. It *may* work on Linux/Windows, but those platforms are currently untested—please open an issue (and include your OS, Python version, and FFmpeg version) if you hit problems.
+ 
+---
 
 ## Red Book (CD-DA) explained
 
