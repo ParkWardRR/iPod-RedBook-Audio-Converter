@@ -72,6 +72,20 @@ def resolve_album_action(
     )
 
 
+def _format_sample_rate(sr: int) -> str:
+    """Format sample rate for display (e.g., 44100 -> '44.1k', 96000 -> '96k')."""
+    if sr % 1000 == 0:
+        return f"{sr // 1000}k"
+    return f"{sr / 1000:.1f}k"
+
+
+def _format_specs(sample_rate: int, bit_depth: int | None) -> str:
+    """Format audio specs as compact string (e.g., '24-96k' for 24-bit/96kHz)."""
+    bd = bit_depth or 16
+    sr_str = _format_sample_rate(sample_rate)
+    return f"{bd}-{sr_str}"
+
+
 def generate_conversion_tag(
     action: Action,
     source_sample_rate: int,
@@ -83,28 +97,45 @@ def generate_conversion_tag(
     """
     Generate a tag string describing the conversion for the filename.
 
+    The tag shows what format/quality the file is AND whether there's a
+    better version in the library (indicated by source specs with arrow).
+
     Returns tags like:
-    - [ALAC] - lossless, no downconversion needed
-    - [ALAC-RedBook] - lossless, downconverted to 16-bit/44.1kHz
-    - [AAC-256k] - AAC at 256kbps
+    - [ALAC] - lossless at CD quality or below, no downconversion
+    - [ALAC 24-96k→16-44.1k] - downconverted from hi-res (library has better)
+    - [AAC 256k] - lossy AAC at 256kbps
+    - [AAC 256k 24-96k] - lossy from hi-res source (library has lossless)
     - [MP3] - passthrough
     """
+    src_bd = source_bit_depth or 16
+
     if action == Action.PASS_MP3:
         return "[MP3]"
 
     if action == Action.AAC:
         bitrate = aac_bitrate or 256
-        return f"[AAC-{bitrate}k]"
+        # For AAC, show source specs if hi-res (indicates better version exists)
+        is_hires_source = source_sample_rate > 44100 or src_bd > 16
+        if is_hires_source:
+            src_specs = _format_specs(source_sample_rate, src_bd)
+            return f"[AAC {bitrate}k {src_specs}]"
+        return f"[AAC {bitrate}k]"
 
     # ALAC actions
     if action in (Action.ALAC_PRESERVE, Action.ALAC_16_44):
+        tgt_bd = target_bit_depth or 16
+
         # Check if downconversion occurred
-        was_downsampled = source_sample_rate > 44100 and target_sample_rate == 44100
-        was_bit_reduced = (source_bit_depth or 16) > 16 and target_bit_depth == 16
+        was_downsampled = source_sample_rate > target_sample_rate
+        was_bit_reduced = src_bd > tgt_bd
 
         if was_downsampled or was_bit_reduced:
-            return "[ALAC-RedBook]"
+            # Show source → target to indicate better version exists in library
+            src_specs = _format_specs(source_sample_rate, src_bd)
+            tgt_specs = _format_specs(target_sample_rate, tgt_bd)
+            return f"[ALAC {src_specs}→{tgt_specs}]"
         else:
+            # No downconversion - this IS the best quality
             return "[ALAC]"
 
     return ""

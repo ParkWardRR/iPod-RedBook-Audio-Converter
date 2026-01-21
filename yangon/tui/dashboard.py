@@ -592,12 +592,12 @@ class ProfessionalDashboard:
             action_badge = ""
             if self.state.current_action:
                 action_map = {
-                    "ALAC_PRESERVE": "[ALAC]",
-                    "ALAC_16_44": "[ALAC→16/44]",
-                    "AAC": "[AAC]",
-                    "PASS_MP3": "[MP3]",
+                    "ALAC_PRESERVE": "ALAC",
+                    "ALAC_16_44": "ALAC→16-44",
+                    "AAC": "AAC",
+                    "PASS_MP3": "MP3",
                 }
-                action_badge = action_map.get(self.state.current_action, f"[{self.state.current_action}]")
+                action_badge = action_map.get(self.state.current_action, self.state.current_action)
 
             track_text = Text()
             track_text.append(track)
