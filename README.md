@@ -59,7 +59,7 @@ ffmpeg -version
 
 ---
 
-## Install (noob-friendly)
+## Install
 
 > These commands assume you want an isolated install in a virtual environment.
 
