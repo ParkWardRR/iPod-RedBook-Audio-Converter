@@ -17,24 +17,28 @@ from yangon.models.status import ArtStatus, TagStatus
 console = Console()
 
 # Supported plan file formats
-PLAN_FORMATS = ["xlsx", "yaml"]
+PLAN_FORMATS = ["xlsx", "tsv", "csv"]
 
 
 def detect_plan_format(path: Path) -> str:
     """Detect plan format from file extension."""
     suffix = path.suffix.lower()
-    if suffix in (".yml", ".yaml"):
-        return "yaml"
+    if suffix == ".tsv":
+        return "tsv"
+    elif suffix == ".csv":
+        return "csv"
     elif suffix in (".xlsx", ".xls"):
         return "xlsx"
     else:
         return "xlsx"  # Default to xlsx
 
 
-def get_plan_path(base_path: Path, format: str) -> Path:
+def get_plan_path(base_path: Path, fmt: str) -> Path:
     """Get plan file path with appropriate extension."""
-    if format == "yaml":
-        return base_path.with_suffix(".yaml")
+    if fmt == "tsv":
+        return base_path.with_suffix(".tsv")
+    elif fmt == "csv":
+        return base_path.with_suffix(".csv")
     else:
         return base_path.with_suffix(".xlsx")
 
@@ -78,7 +82,7 @@ def cli():
     "plan_path",
     type=click.Path(path_type=Path),
     required=True,
-    help="Path to output plan file (XLSX or YAML)",
+    help="Path to output plan file (XLSX, TSV, or CSV)",
 )
 @click.option(
     "--format",
@@ -129,12 +133,12 @@ def scan(
     Scan music library and generate/update plan file.
 
     Walks the library directory, analyzes each album's tracks,
-    and creates a plan file (XLSX or YAML) with conversion options.
+    and creates a plan file (XLSX, TSV, or CSV) with conversion options.
 
     Examples:
         yangon scan -l /music -p plan.xlsx       # XLSX format (Excel)
-        yangon scan -l /music -p plan.yaml       # YAML format (text editor)
-        yangon scan -l /music -p plan -f yaml    # Force YAML format
+        yangon scan -l /music -p plan.tsv        # TSV format (text editor)
+        yangon scan -l /music -p plan.csv        # CSV format (text editor)
     """
     if not check_ffmpeg():
         console.print("[red]Error: FFmpeg not found. Please install FFmpeg.[/red]")
@@ -145,8 +149,10 @@ def scan(
 
     # Determine format
     fmt = plan_format or detect_plan_format(plan_path)
-    if fmt == "yaml" and not plan_path.suffix.lower() in (".yml", ".yaml"):
-        plan_path = plan_path.with_suffix(".yaml")
+    if fmt == "tsv" and plan_path.suffix.lower() != ".tsv":
+        plan_path = plan_path.with_suffix(".tsv")
+    elif fmt == "csv" and plan_path.suffix.lower() != ".csv":
+        plan_path = plan_path.with_suffix(".csv")
     elif fmt == "xlsx" and plan_path.suffix.lower() not in (".xlsx", ".xls"):
         plan_path = plan_path.with_suffix(".xlsx")
 
@@ -200,9 +206,10 @@ def scan(
     if albums:
         console.print(f"\n[blue]Writing {fmt.upper()} plan...[/blue]")
 
-        if fmt == "yaml":
-            from yangon.yaml_io.writer import write_yaml_plan
-            write_yaml_plan(albums, plan_path, library, preserve_user_edits=not recreate)
+        if fmt in ("tsv", "csv"):
+            from yangon.csv_io.writer import write_csv_plan
+            use_tsv = fmt == "tsv"
+            write_csv_plan(albums, plan_path, library, preserve_user_edits=not recreate, use_tsv=use_tsv)
         else:
             from yangon.xlsx.writer import write_xlsx
             write_xlsx(albums, plan_path, library, preserve_user_edits=not recreate)
@@ -220,7 +227,7 @@ def scan(
     "plan_path",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to plan file (XLSX or YAML)",
+    help="Path to plan file (XLSX, TSV, or CSV)",
 )
 @click.option(
     "--out",
@@ -274,12 +281,12 @@ def apply(
     """
     Apply plan decisions to build output library.
 
-    Reads the plan file (XLSX or YAML), resolves actions for each album,
+    Reads the plan file (XLSX, TSV, or CSV), resolves actions for each album,
     and converts/copies tracks to the output directory.
 
     Examples:
         yangon apply --plan plan.xlsx --out /output
-        yangon apply --plan plan.yaml --out /output
+        yangon apply --plan plan.tsv --out /output
     """
     if not check_ffmpeg():
         console.print("[red]Error: FFmpeg not found. Please install FFmpeg.[/red]")
@@ -330,10 +337,10 @@ def apply(
     )
 
     # Read decisions based on format
-    if fmt == "yaml":
-        from yangon.yaml_io.reader import get_yaml_decisions, get_yaml_library_root
-        decisions_list = get_yaml_decisions(plan_path)
-        library_root = get_yaml_library_root(plan_path)
+    if fmt in ("tsv", "csv"):
+        from yangon.csv_io.reader import get_csv_decisions, get_csv_library_root
+        decisions_list = get_csv_decisions(plan_path)
+        library_root = get_csv_library_root(plan_path)
     else:
         from yangon.xlsx.reader import get_album_decisions
         decisions_list = get_album_decisions(plan_path)
@@ -470,14 +477,14 @@ def apply(
     "plan_path",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to plan file (XLSX or YAML)",
+    help="Path to plan file (XLSX, TSV, or CSV)",
 )
 def status(plan_path: Path):
     """
     Display summary from plan file.
 
     Shows album counts, status distribution, and action summary.
-    Works with both XLSX and YAML formats.
+    Works with XLSX, TSV, and CSV formats.
     """
     plan_path = plan_path.resolve()
     fmt = detect_plan_format(plan_path)
@@ -488,10 +495,10 @@ def status(plan_path: Path):
     art_counts: dict[str, int] = {}
     action_counts: dict[str, int] = {}
 
-    if fmt == "yaml":
-        # YAML format
-        from yangon.yaml_io.reader import get_yaml_summary
-        summary = get_yaml_summary(plan_path)
+    if fmt in ("tsv", "csv"):
+        # CSV/TSV format
+        from yangon.csv_io.reader import get_csv_summary
+        summary = get_csv_summary(plan_path)
 
         summary_table = Table(show_header=False, box=None)
         summary_table.add_column("Key", style="bold")
@@ -500,7 +507,7 @@ def status(plan_path: Path):
         summary_table.add_row("library_root", str(summary.get("library_root", "Unknown")))
         summary_table.add_row("total_albums", str(summary.get("total_albums", 0)))
         summary_table.add_row("total_tracks", str(summary.get("total_tracks", 0)))
-        summary_table.add_row("total_size_mb", str(summary.get("total_size_mb", 0)))
+        summary_table.add_row("total_size_mb", f'{summary.get("total_size_mb", 0):.1f}')
         summary_table.add_row("created_at", str(summary.get("created_at", "Unknown")))
 
         console.print(summary_table)
