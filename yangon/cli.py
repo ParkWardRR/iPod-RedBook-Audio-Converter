@@ -60,10 +60,11 @@ def check_ffmpeg() -> bool:
 @click.version_option(version=__version__)
 def cli():
     """
-    yangon - iPod-compatible audio library converter.
+    iPod RedBook Audio Converter
 
-    Scan a music library, generate an XLSX decision sheet,
-    then build an iPod-ready output library.
+    Scan a music library, generate a plan file (XLSX/TSV/CSV),
+    then build an iPod-ready output library with full control
+    over conversion settings.
     """
     pass
 

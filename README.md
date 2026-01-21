@@ -1,8 +1,8 @@
-# Yangon
+# iPod RedBook Audio Converter
 
-**iPod-compatible audio library converter with spreadsheet-based album planning**
+**Convert your high-resolution music library to iPod-compatible formats with spreadsheet-based album planning**
 
-Convert your high-resolution music library to iPod-compatible formats while maintaining full control over every album's conversion settings. Yangon scans your library, generates a decision spreadsheet, and applies your choices with a professional TUI dashboard.
+Scan your music library, generate a decision spreadsheet (XLSX/TSV/CSV), and build an iPod-ready output library with full control over every album's conversion settings. Features a professional TUI dashboard with real-time progress tracking.
 
 <!-- TODO: Add screenshot of main TUI dashboard during conversion -->
 <!-- ![TUI Dashboard](YOUR_IMAGE_HOST_URL/dashboard.png) -->
@@ -75,17 +75,19 @@ choco install ffmpeg
 ```bash
 # Clone the repository
 git clone https://github.com/ParkWardRR/iPod-RedBook-Audio-Converter.git
-cd iPod-RedBook-Audio-Converter
+cd iPod-RedBook-Audio-Converter/yangon
 
 # Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install yangon
+# Install the package
 pip install -e .
 ```
 
 ### Verify Installation
+
+The CLI command is `yangon`:
 
 ```bash
 yangon --version
