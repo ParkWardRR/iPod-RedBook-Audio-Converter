@@ -10,6 +10,7 @@ from yangon.cache.manager import CacheManager
 from yangon.converter.transcoder import convert_track
 from yangon.models.config import ApplyConfig, Config
 from yangon.models.plan import BuildPlan, TrackJob, TrackResult
+from yangon.utils.conversion_log import ConversionLog
 
 
 @dataclass
@@ -80,6 +81,7 @@ class ConversionPipeline:
         self.event_callback = event_callback
         self.cache = CacheManager(config.output_root / config.cache_db_name)
         self.stats = PipelineStats()
+        self.conversion_log = ConversionLog(config.output_root)
 
     def emit(self, event: PipelineEvent) -> None:
         """Emit event to callback if registered."""
@@ -106,6 +108,14 @@ class ConversionPipeline:
             started_at=datetime.now(),
         )
 
+        # Initialize conversion log
+        self.conversion_log = ConversionLog(self.config.output_root)
+        self.conversion_log.start(
+            total_tracks=len(plan.jobs),
+            albums_processed=len(set(j.album_id for j in plan.jobs)),
+            albums_skipped=len(plan.skipped_albums),
+        )
+
         if dry_run:
             return self._dry_run(plan)
 
@@ -116,6 +126,7 @@ class ConversionPipeline:
         for job in plan.jobs:
             if not self.config.force and self._is_cached(job):
                 self.stats.cached_jobs += 1
+                self.conversion_log.log_cached(job)
                 cached_results.append(TrackResult(
                     source_path=job.source_path,
                     output_path=job.output_path,
@@ -131,6 +142,11 @@ class ConversionPipeline:
             results.extend(self._run_parallel(jobs_to_run))
 
         self.stats.completed_at = datetime.now()
+
+        # Complete and write conversion logs
+        self.conversion_log.complete()
+        log_paths = self.conversion_log.write_logs()
+
         return results
 
     def _is_cached(self, job: TrackJob) -> bool:
@@ -188,6 +204,8 @@ class ConversionPipeline:
                             error=result.error_message or "Unknown error",
                         ))
 
+                    # Log the track conversion
+                    self.conversion_log.log_track(job, result)
                     results.append(result)
 
                 except Exception as e:
@@ -197,6 +215,8 @@ class ConversionPipeline:
                         success=False,
                         error_message=str(e),
                     )
+                    # Log the error
+                    self.conversion_log.log_track(job, error_result)
                     results.append(error_result)
                     self.emit(JobErrorEvent(job=job, error=str(e)))
 

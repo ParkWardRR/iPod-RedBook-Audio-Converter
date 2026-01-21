@@ -13,6 +13,68 @@ class ColumnOwner(str, Enum):
     BOTH = "both"  # Tool generates, user can add notes
 
 
+# Action enum values and their descriptions for the Reference tab
+ACTION_OPTIONS = [
+    ("ALAC_PRESERVE", "Convert to ALAC, preserve source sample rate/bit depth (downconvert if >44.1kHz/16-bit)"),
+    ("ALAC_16_44", "Convert to ALAC, force 16-bit/44.1kHz (Red Book standard)"),
+    ("AAC", "Convert to AAC lossy (use aac_target_kbps column to set bitrate: 128/192/256/320)"),
+    ("PASS_MP3", "Pass through MP3 files unchanged (no re-encoding)"),
+    ("SKIP", "Skip this album entirely (do not convert)"),
+]
+
+# Status values and their meanings
+STATUS_VALUES = [
+    ("GREEN", "All required metadata/artwork present and meets quality threshold"),
+    ("YELLOW", "Minor issues (e.g., missing year, ambiguous artwork)"),
+    ("RED", "Critical issues (missing required tags or no artwork found)"),
+]
+
+# AAC bitrate options
+AAC_BITRATE_OPTIONS = [128, 192, 256, 320]
+
+# Column styling categories
+COLUMN_STYLES = {
+    "editable": {
+        "fill_color": "C6EFCE",  # Light green
+        "description": "User-editable: You can modify these values",
+    },
+    "computed": {
+        "fill_color": "BDD7EE",  # Light blue
+        "description": "Computed: Tool-generated based on analysis",
+    },
+    "info": {
+        "fill_color": "F2F2F2",  # Light gray
+        "description": "Informational: Source metadata (read-only)",
+    },
+}
+
+# Map columns to style categories
+COLUMN_STYLE_MAP = {
+    # Informational (gray) - source metadata
+    "album_id": "info",
+    "source_path": "info",
+    "artist": "info",
+    "album": "info",
+    "year": "info",
+    "track_count": "info",
+    "source_formats": "info",
+    "max_sr_hz": "info",
+    "max_bit_depth": "info",
+    # Computed (blue) - tool analysis
+    "default_action": "computed",
+    "tag_status": "computed",
+    "art_status": "computed",
+    "plan_hash": "computed",
+    "last_built_at": "computed",
+    "error_code": "computed",
+    # Editable (green) - user controls
+    "user_action": "editable",
+    "aac_target_kbps": "editable",
+    "skip": "editable",
+    "notes": "editable",
+}
+
+
 # Albums sheet column definitions
 # Order matters - this is the column order in the sheet
 ALBUMS_COLUMNS = [

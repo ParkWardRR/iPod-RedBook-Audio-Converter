@@ -72,23 +72,67 @@ def resolve_album_action(
     )
 
 
+def generate_conversion_tag(
+    action: Action,
+    source_sample_rate: int,
+    source_bit_depth: int | None,
+    target_sample_rate: int,
+    target_bit_depth: int | None,
+    aac_bitrate: int | None,
+) -> str:
+    """
+    Generate a tag string describing the conversion for the filename.
+
+    Returns tags like:
+    - [ALAC] - lossless, no downconversion needed
+    - [ALAC-RedBook] - lossless, downconverted to 16-bit/44.1kHz
+    - [AAC-256k] - AAC at 256kbps
+    - [MP3] - passthrough
+    """
+    if action == Action.PASS_MP3:
+        return "[MP3]"
+
+    if action == Action.AAC:
+        bitrate = aac_bitrate or 256
+        return f"[AAC-{bitrate}k]"
+
+    # ALAC actions
+    if action in (Action.ALAC_PRESERVE, Action.ALAC_16_44):
+        # Check if downconversion occurred
+        was_downsampled = source_sample_rate > 44100 and target_sample_rate == 44100
+        was_bit_reduced = (source_bit_depth or 16) > 16 and target_bit_depth == 16
+
+        if was_downsampled or was_bit_reduced:
+            return "[ALAC-RedBook]"
+        else:
+            return "[ALAC]"
+
+    return ""
+
+
 def generate_output_path(
     track,
     album: Album,
     config: ApplyConfig,
     action: Action,
+    target_sample_rate: int,
+    target_bit_depth: int | None,
+    aac_bitrate: int | None = None,
 ) -> Path:
     """
-    Generate output path for a track.
+    Generate output path for a track with conversion spec in filename.
 
     Args:
         track: Track to generate path for
         album: Parent album
         config: Apply configuration
         action: Resolved action
+        target_sample_rate: Target sample rate after conversion
+        target_bit_depth: Target bit depth after conversion
+        aac_bitrate: AAC bitrate if applicable
 
     Returns:
-        Output path
+        Output path with conversion spec tag in filename
     """
     # Determine extension
     if action == Action.PASS_MP3:
@@ -127,7 +171,17 @@ def generate_output_path(
     else:
         album_folder = album_name
 
-    filename = f"{disc_prefix}{track_num:02d} {title}{ext}"
+    # Generate conversion tag for filename
+    conversion_tag = generate_conversion_tag(
+        action=action,
+        source_sample_rate=track.sample_rate,
+        source_bit_depth=track.bit_depth,
+        target_sample_rate=target_sample_rate,
+        target_bit_depth=target_bit_depth,
+        aac_bitrate=aac_bitrate,
+    )
+
+    filename = f"{disc_prefix}{track_num:02d} {title} {conversion_tag}{ext}"
 
     return config.output_root / album_artist / album_folder / filename
 
@@ -197,8 +251,16 @@ def resolve_track_jobs(
         else:
             continue
 
-        # Generate output path
-        output_path = generate_output_path(track, album, config, action)
+        # Generate output path with conversion specs
+        output_path = generate_output_path(
+            track=track,
+            album=album,
+            config=config,
+            action=action,
+            target_sample_rate=params["target_sample_rate"],
+            target_bit_depth=params["target_bit_depth"],
+            aac_bitrate=resolved_action.aac_bitrate_kbps,
+        )
 
         # Compute settings hash
         settings_hash = compute_settings_hash(

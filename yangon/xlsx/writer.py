@@ -14,7 +14,16 @@ from yangon.models.plan import Action
 from yangon.models.status import ArtStatus, TagStatus
 from yangon.planner.defaults import compute_default_action
 from yangon.xlsx.reader import read_xlsx
-from yangon.xlsx.schemas import ALBUMS_COLUMNS, SCHEMA_VERSION, USER_COLUMNS
+from yangon.xlsx.schemas import (
+    AAC_BITRATE_OPTIONS,
+    ACTION_OPTIONS,
+    ALBUMS_COLUMNS,
+    COLUMN_STYLE_MAP,
+    COLUMN_STYLES,
+    SCHEMA_VERSION,
+    STATUS_VALUES,
+    USER_COLUMNS,
+)
 
 
 class XLSXLockError(Exception):
@@ -100,6 +109,9 @@ def write_xlsx(
 
     # Create Albums sheet
     _write_albums_sheet(wb, albums, library_root, existing_data)
+
+    # Create Reference sheet (enum options, column legend)
+    _write_reference_sheet(wb)
 
     # Remove default empty sheet if it exists
     if "Sheet" in wb.sheetnames:
@@ -197,8 +209,30 @@ def _write_albums_sheet(
 
     # Styles
     header_font = Font(bold=True)
-    header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
     header_border = Border(bottom=Side(style="thin"))
+
+    # Column category fills for headers
+    editable_fill = PatternFill(
+        start_color=COLUMN_STYLES["editable"]["fill_color"],
+        end_color=COLUMN_STYLES["editable"]["fill_color"],
+        fill_type="solid",
+    )
+    computed_fill = PatternFill(
+        start_color=COLUMN_STYLES["computed"]["fill_color"],
+        end_color=COLUMN_STYLES["computed"]["fill_color"],
+        fill_type="solid",
+    )
+    info_fill = PatternFill(
+        start_color=COLUMN_STYLES["info"]["fill_color"],
+        end_color=COLUMN_STYLES["info"]["fill_color"],
+        fill_type="solid",
+    )
+
+    header_fills = {
+        "editable": editable_fill,
+        "computed": computed_fill,
+        "info": info_fill,
+    }
 
     green_fill = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")
     yellow_fill = PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid")
@@ -210,13 +244,16 @@ def _write_albums_sheet(
         "RED": red_fill,
     }
 
-    # Write header row
+    # Write header row with color-coded columns
     for col_idx, (col_name, _, _) in enumerate(ALBUMS_COLUMNS, start=1):
         cell = ws.cell(row=1, column=col_idx, value=col_name)
         cell.font = header_font
-        cell.fill = header_fill
         cell.border = header_border
         cell.alignment = Alignment(horizontal="center")
+
+        # Apply category-based fill color
+        style_category = COLUMN_STYLE_MAP.get(col_name, "info")
+        cell.fill = header_fills[style_category]
 
     # Write album rows
     for row_idx, album in enumerate(albums, start=2):
@@ -347,3 +384,144 @@ def update_xlsx_album(
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+def _write_reference_sheet(wb: Workbook) -> None:
+    """Write Reference tab with enum options and column legend."""
+    ws = wb.create_sheet("Reference", 2)
+
+    # Styles
+    header_font = Font(bold=True, size=12)
+    subheader_font = Font(bold=True)
+    header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+
+    # Column style fills
+    editable_fill = PatternFill(
+        start_color=COLUMN_STYLES["editable"]["fill_color"],
+        end_color=COLUMN_STYLES["editable"]["fill_color"],
+        fill_type="solid",
+    )
+    computed_fill = PatternFill(
+        start_color=COLUMN_STYLES["computed"]["fill_color"],
+        end_color=COLUMN_STYLES["computed"]["fill_color"],
+        fill_type="solid",
+    )
+    info_fill = PatternFill(
+        start_color=COLUMN_STYLES["info"]["fill_color"],
+        end_color=COLUMN_STYLES["info"]["fill_color"],
+        fill_type="solid",
+    )
+
+    row = 1
+
+    # Column Legend Section
+    ws.cell(row=row, column=1, value="COLUMN LEGEND").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 1
+
+    ws.cell(row=row, column=1, value="Column headers are color-coded to indicate their purpose:")
+    row += 2
+
+    # Editable columns
+    ws.cell(row=row, column=1, value="GREEN - Editable").font = subheader_font
+    ws.cell(row=row, column=1).fill = editable_fill
+    ws.cell(row=row, column=2, value="You can modify these values to control conversion")
+    row += 1
+
+    editable_cols = [col for col, style in COLUMN_STYLE_MAP.items() if style == "editable"]
+    ws.cell(row=row, column=1, value=f"  Columns: {', '.join(editable_cols)}")
+    row += 2
+
+    # Computed columns
+    ws.cell(row=row, column=1, value="BLUE - Computed").font = subheader_font
+    ws.cell(row=row, column=1).fill = computed_fill
+    ws.cell(row=row, column=2, value="Tool-generated analysis (do not edit)")
+    row += 1
+
+    computed_cols = [col for col, style in COLUMN_STYLE_MAP.items() if style == "computed"]
+    ws.cell(row=row, column=1, value=f"  Columns: {', '.join(computed_cols)}")
+    row += 2
+
+    # Info columns
+    ws.cell(row=row, column=1, value="GRAY - Informational").font = subheader_font
+    ws.cell(row=row, column=1).fill = info_fill
+    ws.cell(row=row, column=2, value="Source metadata (read-only)")
+    row += 1
+
+    info_cols = [col for col, style in COLUMN_STYLE_MAP.items() if style == "info"]
+    ws.cell(row=row, column=1, value=f"  Columns: {', '.join(info_cols)}")
+    row += 3
+
+    # Action Options Section
+    ws.cell(row=row, column=1, value="ACTION OPTIONS (for user_action column)").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 2
+
+    ws.cell(row=row, column=1, value="Action").font = subheader_font
+    ws.cell(row=row, column=2, value="Description").font = subheader_font
+    row += 1
+
+    for action, description in ACTION_OPTIONS:
+        ws.cell(row=row, column=1, value=action)
+        ws.cell(row=row, column=2, value=description)
+        row += 1
+
+    row += 2
+
+    # AAC Bitrate Options
+    ws.cell(row=row, column=1, value="AAC BITRATE OPTIONS (for aac_target_kbps column)").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 2
+
+    ws.cell(row=row, column=1, value=f"Allowed values: {', '.join(str(b) for b in AAC_BITRATE_OPTIONS)} kbps")
+    ws.cell(row=row, column=2, value="Default: 256 kbps")
+    row += 3
+
+    # Status Values Section
+    ws.cell(row=row, column=1, value="STATUS VALUES (tag_status / art_status)").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 2
+
+    green_fill = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")
+    yellow_fill = PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid")
+    red_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
+
+    status_fills = {"GREEN": green_fill, "YELLOW": yellow_fill, "RED": red_fill}
+
+    for status, description in STATUS_VALUES:
+        ws.cell(row=row, column=1, value=status).fill = status_fills[status]
+        ws.cell(row=row, column=2, value=description)
+        row += 1
+
+    row += 2
+
+    # Skip Column
+    ws.cell(row=row, column=1, value="SKIP COLUMN").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 2
+
+    ws.cell(row=row, column=1, value="TRUE")
+    ws.cell(row=row, column=2, value="Skip this album entirely (leave blank or FALSE to include)")
+    row += 3
+
+    # Quick Reference
+    ws.cell(row=row, column=1, value="QUICK WORKFLOW").font = header_font
+    ws.cell(row=row, column=1).fill = header_fill
+    row += 2
+
+    workflow_steps = [
+        "1. Review the Albums tab - check tag_status and art_status columns",
+        "2. For albums with RED status, consider fixing source files or skipping",
+        "3. To override default conversion: set user_action to your preferred action",
+        "4. To convert to AAC: set user_action=AAC and optionally set aac_target_kbps",
+        "5. To skip an album: set skip=TRUE",
+        "6. Save the XLSX and run: yangon apply --xlsx <this_file> --out <output_dir>",
+    ]
+
+    for step in workflow_steps:
+        ws.cell(row=row, column=1, value=step)
+        row += 1
+
+    # Set column widths
+    ws.column_dimensions["A"].width = 50
+    ws.column_dimensions["B"].width = 70
