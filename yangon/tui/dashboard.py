@@ -175,38 +175,63 @@ class DashboardState:
 
     @property
     def eta(self) -> str:
-        """Calculate estimated time remaining."""
+        """Calculate estimated time remaining with early estimates."""
         if self.phase not in ("SCANNING", "CONVERTING"):
             return "—"
 
-        if self.phase == "SCANNING":
-            if self.scan_current == 0 or self.scan_total == 0:
-                return "calculating..."
-            elapsed_sec = self.elapsed.total_seconds()
-            rate = self.scan_current / elapsed_sec if elapsed_sec > 0 else 0
-            if rate == 0:
-                return "—"
-            remaining = self.scan_total - self.scan_current
-            eta_seconds = remaining / rate
-        else:
-            completed = self.build_completed + self.build_cached
-            if completed == 0 or self.build_total == 0:
-                return "calculating..."
-            elapsed_sec = self.elapsed.total_seconds()
-            rate = completed / elapsed_sec if elapsed_sec > 0 else 0
-            if rate == 0:
-                return "—"
-            remaining = self.build_total - completed
-            eta_seconds = remaining / rate
+        elapsed_sec = self.elapsed.total_seconds()
 
-        if eta_seconds < 60:
+        if self.phase == "SCANNING":
+            if self.scan_total == 0:
+                return "estimating..."
+
+            # Show estimate even with minimal progress
+            if self.scan_current == 0:
+                if elapsed_sec < 2:
+                    return "estimating..."
+                # Assume ~0.5 items/sec as initial guess
+                eta_seconds = self.scan_total * 2
+            else:
+                rate = self.scan_current / elapsed_sec if elapsed_sec > 0 else 0.5
+                remaining = self.scan_total - self.scan_current
+                eta_seconds = remaining / rate if rate > 0 else remaining * 2
+        else:
+            if self.build_total == 0:
+                return "estimating..."
+
+            completed = self.build_completed + self.build_cached
+
+            # Show estimate even with minimal progress
+            if completed == 0:
+                if elapsed_sec < 3:
+                    return "estimating..."
+                # Use throughput data if available, or assume ~1 track/3sec
+                if self.tracks_per_minute > 0:
+                    eta_seconds = self.build_total / (self.tracks_per_minute / 60)
+                else:
+                    eta_seconds = self.build_total * 3
+            else:
+                rate = completed / elapsed_sec if elapsed_sec > 0 else 0.33
+                remaining = self.build_total - completed
+                eta_seconds = remaining / rate if rate > 0 else remaining * 3
+
+        # Format the ETA nicely
+        if eta_seconds < 0:
+            return "almost done"
+        elif eta_seconds < 10:
+            return "< 10s"
+        elif eta_seconds < 60:
             return f"~{int(eta_seconds)}s"
         elif eta_seconds < 3600:
-            return f"~{int(eta_seconds / 60)}m"
+            mins = int(eta_seconds / 60)
+            secs = int(eta_seconds % 60)
+            if mins < 5:
+                return f"~{mins}m {secs:02d}s"
+            return f"~{mins}m"
         else:
             hours = int(eta_seconds / 3600)
             mins = int((eta_seconds % 3600) / 60)
-            return f"~{hours}h {mins}m"
+            return f"~{hours}h {mins:02d}m"
 
     @property
     def progress_percent(self) -> float:
