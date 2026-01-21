@@ -2,7 +2,7 @@
 
 Build an iPod library that sounds as good as possible for **Red Book** playback (16-bit / 44.1kHz) without wasting space.
 
-If you use an iPod through a digital dock like the Onkyo ND-S1 (Red Book output), hi‑res files don’t increase playback quality. This tool keeps your iPod library within iPod/Red Book limits by **downscaling lossless sources (e.g., FLAC/hi‑res) when needed**, and never upscales anything.
+If you use an iPod through a digital dock like the Onkyo ND-S1 (Red Book output), hi‑res files don’t increase playback quality. This tool keeps your iPod library within iPod/Red Book limits by **downscaling lossless sources (e.g., FLAC/hi‑res) when needed**, and never upscales nothing.
 
 <img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
