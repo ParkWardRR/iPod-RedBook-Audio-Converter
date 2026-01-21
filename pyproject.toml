@@ -1,0 +1,39 @@
+[project]
+name = "yangon"
+version = "0.1.0"
+description = "iPod-compatible audio library converter with XLSX-based album planning"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1.0",
+    "mutagen>=1.47.0",
+    "openpyxl>=3.1.0",
+    "rich>=13.7.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "pillow>=10.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+yangon = "yangon.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
