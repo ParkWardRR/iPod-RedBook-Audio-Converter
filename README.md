@@ -1,293 +1,263 @@
 # iPod RedBook Audio Converter
 
-**Convert your high-resolution music library to iPod-compatible formats with spreadsheet-based album planning**
+Build an iPod library that sounds as good as possible for **Red Book** playback (16-bit / 44.1kHz) without wasting space.
 
-Scan your music library, generate a decision spreadsheet (XLSX/TSV/CSV), and build an iPod-ready output library with full control over every album's conversion settings. Features a professional TUI dashboard with real-time progress tracking.
+If you use an iPod through a digital dock like the Onkyo ND-S1 (Red Book output), hi‑res files don’t increase playback quality. This tool keeps your iPod library within iPod/Red Book limits by **downscaling lossless sources (e.g., FLAC/hi‑res) when needed**, and never upscales anything.
 
 <img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
 ---
 
-## Features
+## What it does
 
-### Smart Library Scanning
-- Automatically detects albums from directory structure
-- Analyzes audio formats, sample rates, and bit depths via FFprobe
-- Evaluates metadata quality (tags and artwork) with traffic-light status
+You point it at your music library, it produces a per-album “plan” file (XLSX/TSV/CSV), and then it builds an iPod-ready output library based on that plan.
 
-<img src="https://i.postimg.cc/7br6NNDb/Scanning.png" width="600" alt="Scanning TUI">
+It’s designed for people who want:
+- Top-quality iPod playback (ALAC 16/44.1 where appropriate)
+- Smaller files when hi‑res would be wasted on an iPod/Red Book chain
+- Full control per album (keep lossless, choose AAC bitrate, passthrough MP3, or skip)
 
-### Spreadsheet-Based Workflow
-- **XLSX** (Excel) - Full formatting with conditional highlighting and reference sheets
-- **TSV** (Tab-separated) - Edit in any text editor, handles commas in metadata
-- **CSV** (Comma-separated) - Universal compatibility
+---
 
-### Audio Processing
-- **ALAC** - Lossless Apple codec, preserves or downconverts to Red Book (16-bit/44.1kHz)
-- **AAC** - Lossy encoding at 128/192/256/320 kbps
-- **MP3 Passthrough** - Copy existing MP3 files unchanged
-- **Never-upconvert policy** - Only downconverts when source exceeds target specs
-- **Proper dithering** - Uses SoXR triangular dither for bit-depth reduction
+## Key rules (important)
 
-### Professional TUI
-- Real-time progress tracking with ETA
-- Per-album and per-track status
-- Error summary and activity log
-- Compact mode for small terminals
-
-### Performance
-- Parallel scanning with ThreadPoolExecutor (I/O-bound)
-- Parallel conversion with ProcessPoolExecutor (CPU-bound)
-- SQLite caching for incremental builds
-- Skip already-converted tracks automatically
+- No upscaling: if a track is 16/44.1 already, it stays there (no fake “hi-res”).
+- Downscale only when needed: if the source exceeds iPod/Red Book limits, it is downconverted to 16/44.1 (with proper dithering).
+- Output stays iPod-friendly:
+  - ALAC for lossless
+  - AAC for space savings
+  - MP3 passthrough when you already have MP3s
 
 ---
 
 ## Requirements
 
-- **Python 3.12+**
-- **FFmpeg 6+** (must be in PATH)
+| Requirement | Notes |
+|---|---|
+| Python | 3.12+ |
+| FFmpeg | 6+ and available in PATH |
 
-### Installing FFmpeg
+### Install FFmpeg
 
 ```bash
-# macOS
+# macOS (Homebrew)
 brew install ffmpeg
 
 # Ubuntu/Debian
 sudo apt install ffmpeg
 
-# Windows (via Chocolatey)
+# Windows (Chocolatey)
 choco install ffmpeg
+```
+
+Quick sanity check:
+
+```bash
+python3 --version
+ffmpeg -version
 ```
 
 ---
 
-## Installation
+## Install (noob-friendly)
 
-### Using a Virtual Environment (Recommended)
+> These commands assume you want an isolated install in a virtual environment.
 
 ```bash
-# Clone the repository
+# 1) Clone
 git clone https://github.com/ParkWardRR/iPod-RedBook-Audio-Converter.git
-cd iPod-RedBook-Audio-Converter/yangon
+cd iPod-RedBook-Audio-Converter
 
-# Create and activate virtual environment
+# 2) Create a virtual environment
 python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install the package
+# 3) Activate it
+source .venv/bin/activate   # macOS/Linux
+# .venv\Scripts\activate     # Windows PowerShell
+
+# 4) Install
+pip install -U pip
 pip install -e .
 ```
 
-### Verify Installation
+### Verify install
 
-The CLI command is `yangon`:
+> Replace `ipodrb` below with the actual CLI name installed by the project.
 
 ```bash
-yangon --version
-yangon --help
+ipodrb --version
+ipodrb --help
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Scan Your Library
+### 1) Scan your library → generate a plan
 
 ```bash
-# Generate XLSX plan (recommended for Excel users)
-yangon scan --library /path/to/music --plan plan.xlsx
+# XLSX is best if you use Excel/Numbers/LibreOffice
+ipodrb scan --library "/path/to/music" --plan plan.xlsx
 
-# Generate TSV plan (recommended for text editor users)
-yangon scan --library /path/to/music --plan plan.tsv
+# TSV is great if you want plain text
+ipodrb scan --library "/path/to/music" --plan plan.tsv
 ```
 
-### 2. Review and Edit the Plan
+<img src="https://i.postimg.cc/7br6NNDb/Scanning.png" width="600" alt="Scanning TUI">
 
-Open the generated plan file and set your preferences:
+### 2) Edit the plan (choose what happens per album)
 
-| Column | Description |
-|--------|-------------|
-| `user_action` | Override the default action (ALAC_PRESERVE, ALAC_16_44, AAC, PASS_MP3, SKIP) |
-| `aac_bitrate_kbps` | Set AAC bitrate (128, 192, 256, 320) |
-| `skip` | Set to `true` to skip this album |
+Open the plan and set the album actions you want:
 
-The XLSX format includes a **Reference** tab with all valid action values and their descriptions.
+| Column | What it controls |
+|---|---|
+| `user_action` | Album action: `ALAC_PRESERVE`, `ALAC_16_44`, `AAC`, `PASS_MP3`, `SKIP` |
+| `aac_bitrate_kbps` | AAC bitrate: `128`, `192`, `256`, `320` |
+| `skip` | `true` to skip the album |
 
-### 3. Check Status
+Tip: the XLSX format includes a Reference tab listing valid values.
+
+### 3) Preview library status (tags + artwork)
 
 ```bash
-yangon status --plan plan.xlsx
+ipodrb status --plan plan.xlsx
 ```
 
 <img src="https://i.postimg.cc/XX6Jgg3p/Status.png" width="500" alt="Status Output">
 
-Shows summary of albums by tag status, art status, and selected actions.
-
-### 4. Apply Conversions
+### 4) Build your iPod-ready output library
 
 ```bash
 # Convert with TUI dashboard
-yangon apply --plan plan.xlsx --out /path/to/ipod/Music
+ipodrb apply --plan plan.xlsx --out "/path/to/iPod/Music"
 
-# Dry run (preview without converting)
-yangon apply --plan plan.xlsx --out /path/to/ipod/Music --dry-run
+# Dry run (no files written)
+ipodrb apply --plan plan.xlsx --out "/path/to/iPod/Music" --dry-run
 
-# Force rebuild all (ignore cache)
-yangon apply --plan plan.xlsx --out /path/to/ipod/Music --force
+# Force rebuild (ignore cache)
+ipodrb apply --plan plan.xlsx --out "/path/to/iPod/Music" --force
 ```
 
 ---
 
-## Output Filename Format
+## Output naming (so you can see what happened)
 
-Output filenames include tags that indicate the conversion applied and whether a better version exists in your library:
+Filenames include tags that show what conversion was applied and whether your main library has a higher-quality source.
 
 | Tag | Meaning |
-|-----|---------|
-| `[ALAC]` | Lossless at CD quality or below - this IS the best quality |
-| `[ALAC 24-96k→16-44.1k]` | Downconverted from 24-bit/96kHz - **library has better** |
-| `[AAC 256k]` | Lossy AAC at 256kbps from CD source |
-| `[AAC 256k 24-96k]` | Lossy from hi-res source - **library has lossless** |
-| `[MP3]` | Passthrough |
-
-**How to read:** If you see an arrow (→), the library has a higher quality version of that track.
-
-**Examples:**
-```
-01 Harlem [ALAC].m4a                      # CD quality, no better version
-02 Sunshine [ALAC 24-96k→16-44.1k].m4a    # Downconverted from hi-res
-03 Dreams [AAC 256k].m4a                   # Lossy from CD source
-04 Night [AAC 256k 24-96k].m4a            # Lossy - library has lossless
-```
+|---|---|
+| `[ALAC]` | Lossless at CD quality or below |
+| `[ALAC 24-96k→16-44.1k]` | Downconverted from hi-res lossless (your library has better than the iPod copy) |
+| `[AAC 256k]` | Lossy AAC from CD-quality source |
+| `[AAC 256k 24-96k]` | Lossy AAC from hi-res source (your library has lossless) |
+| `[MP3]` | MP3 passthrough |
 
 ---
 
-## Command Reference
+## Output structure
 
-### `yangon scan`
-
-Scan a music library and generate a plan file.
-
-```bash
-yangon scan --library PATH --plan PATH [OPTIONS]
-```
-
-| Option | Description |
-|--------|-------------|
-| `-l, --library PATH` | Path to music library root (required) |
-| `-p, --plan PATH` | Output plan file path (required) |
-| `-f, --format` | Force format: `xlsx`, `tsv`, or `csv` |
-| `--recreate` | Discard existing user edits |
-| `--threads N` | Parallel scan threads (default: 32) |
-| `--no-tui` | Disable TUI progress display |
-| `--compact` | Use compact 3-line TUI |
-
-### `yangon apply`
-
-Apply plan decisions and convert audio files.
-
-```bash
-yangon apply --plan PATH --out PATH [OPTIONS]
-```
-
-| Option | Description |
-|--------|-------------|
-| `-p, --plan PATH` | Plan file path (required) |
-| `-o, --out PATH` | Output directory (required) |
-| `--dry-run` | Preview without writing files |
-| `--fail-fast` | Stop on first error |
-| `--force` | Ignore cache, rebuild all |
-| `--threads N` | Parallel conversion threads (default: CPU count) |
-| `--no-tui` | Disable TUI progress display |
-| `--compact` | Use compact 3-line TUI |
-
-### `yangon status`
-
-Display summary from a plan file.
-
-```bash
-yangon status --plan PATH
-```
-
----
-
-## Audio Actions
-
-| Action | Description |
-|--------|-------------|
-| `ALAC_PRESERVE` | Convert to ALAC, preserve source sample rate/bit depth (downconvert if >44.1kHz/16-bit) |
-| `ALAC_16_44` | Convert to ALAC, force 16-bit/44.1kHz Red Book standard |
-| `AAC` | Convert to AAC lossy (set bitrate in `aac_bitrate_kbps` column) |
-| `PASS_MP3` | Copy MP3 files unchanged |
-| `SKIP` | Do not process this album |
-
----
-
-## Status Indicators
-
-### Tag Status
-| Status | Meaning |
-|--------|---------|
-| GREEN | All required tags present and consistent |
-| YELLOW | Missing year or minor inconsistencies |
-| RED | Missing title/album or track numbering issues |
-
-### Art Status
-| Status | Meaning |
-|--------|---------|
-| GREEN | Cover art found, 300x300 pixels or larger |
-| YELLOW | Art exists but small or ambiguous |
-| RED | No artwork found |
-
----
-
-## Output Structure
-
-Converted files are organized as:
-
-```
+```text
 {output}/
   {Album Artist}/
     {Year} - {Album}/
       {Track:02} {Title} [TAG].m4a
 ```
 
-A `manifest.csv` is generated in the output root with details of all converted tracks.
+A `manifest.csv` is written at the output root with details of all processed tracks.
 
 ---
 
-## Plan File Formats
+## Command reference
 
-### XLSX (Excel)
-- Conditional formatting highlights status columns
-- Reference tab documents all valid actions
-- Best for users who prefer spreadsheet editing
+### `scan`
+```bash
+ipodrb scan --library PATH --plan PATH [OPTIONS]
+```
 
-### TSV (Tab-Separated Values)
-- Plain text, editable in any text editor
-- Handles commas in artist/album names without escaping
-- Metadata stored in `#` comment lines at top
+| Option | Description |
+|---|---|
+| `--library PATH` | Music library root (required) |
+| `--plan PATH` | Plan output path (required) |
+| `--format` | Force `xlsx`, `tsv`, or `csv` |
+| `--recreate` | Discard existing user edits |
+| `--threads N` | Scan threads (default: 32) |
+| `--no-tui` | Disable TUI |
+| `--compact` | Compact TUI |
 
-### CSV (Comma-Separated Values)
-- Universal compatibility
-- Some editors handle embedded commas better than others
+### `apply`
+```bash
+ipodrb apply --plan PATH --out PATH [OPTIONS]
+```
+
+| Option | Description |
+|---|---|
+| `--plan PATH` | Plan path (required) |
+| `--out PATH` | Output directory (required) |
+| `--dry-run` | Preview only |
+| `--fail-fast` | Stop on first error |
+| `--force` | Ignore cache |
+| `--threads N` | Conversion threads (default: CPU count) |
+| `--no-tui` | Disable TUI |
+| `--compact` | Compact TUI |
+
+### `status`
+```bash
+ipodrb status --plan PATH
+```
 
 ---
 
 ## Development
 
 ```bash
-# Install with dev dependencies
 pip install -e ".[dev]"
-
-# Run tests
 pytest
+ruff check .
+``` 
 
-# Run linter
-ruff check yangon/
-```
+---
+
+## Red Book (CD-DA) explained
+
+> [!TIP]
+> In this repo, “Red Book” means **CD-quality audio**: 16-bit / 44.1 kHz PCM—the baseline format defined for audio CDs. [web:15][web:2]
+
+### What “Red Book” is
+“Red Book” is the colloquial name for the original **Compact Disc Digital Audio (CD‑DA)** specification created by Philips and Sony and published in 1980. [web:15][web:10]  
+It defines the *logical* audio format for an audio CD: two-channel, 16-bit PCM sampled at 44.1 kHz. [web:15][web:2]  
+In standards terms, CD‑DA is covered by IEC 60908 (“Audio recording — Compact disc digital audio system”). [web:7][web:13]
+
+### Why 44.1 kHz and 16-bit?
+A 44.1 kHz sampling rate supports audio up to 22.05 kHz by the Nyquist–Shannon theorem, which was chosen to cover the traditional “20 Hz–20 kHz” audible range. [web:14]  
+Historically, 44.1 kHz was inherited from early studio-to-mastering workflows that used PCM adaptors based on video recorders, and that legacy carried into the CD specification. [web:14][web:8]
+
+### Core technical parameters
+
+| Parameter | Red Book value |
+|---|---|
+| Channels | 2-channel stereo PCM (standard CD‑DA) [web:2][web:15] |
+| Bit depth | 16-bit linear PCM [web:2][web:15] |
+| Sample rate | 44.1 kHz [web:2][web:15] |
+| Audio data rate | 1,411.2 kbps (2 × 44,100 × 16) [web:2] |
+| Track count (typical limit) | Up to 99 tracks is commonly cited for CD‑DA. [web:10][web:3] |
+| Disc/play time (historical target) | ~74 minutes is commonly referenced for early CD design targets/spec summaries. [web:10][web:4] |
+
+### A short history (high level)
+
+| Year | What happened |
+|---:|---|
+| 1979–1980 | Philips and Sony aligned on key CD‑DA choices like 44.1 kHz sampling and 16-bit quantization during joint development meetings. [web:4] |
+| 1980 | The CD‑DA spec was published (the “Red Book” document). [web:10][web:15] |
+| 1999 | IEC 60908 was published as an IEC standard defining CD‑DA interchangeability parameters for discs and players. [web:7][web:13] |
+
+<details>
+<summary><strong>Where the name comes from (Rainbow Books)</strong></summary>
+
+“Red Book” is named after the color of its cover and is part of the broader “Rainbow Books” family of CD-related specifications. [web:3][web:10]  
+Different colors historically correspond to different CD formats (audio CD, CD-ROM, recordable variants, etc.). [web:3]
+
+</details>
+
 
 ---
 
@@ -310,3 +280,4 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 - [Click](https://click.palletsprojects.com/) - CLI framework
 - [Mutagen](https://mutagen.readthedocs.io/) - Audio metadata handling
 - [openpyxl](https://openpyxl.readthedocs.io/) - Excel file support
+
