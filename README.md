@@ -1,6 +1,6 @@
-# yangon
+# iPod RedBook Audio Converter
 
-iPod-compatible audio library converter with XLSX-based album planning.
+Professional-grade audio library converter optimized for iPod Classic with XLSX-based album planning workflow.
 
 ## Features
 
@@ -44,4 +44,4 @@ yangon status --xlsx /path/to/plan.xlsx
 
 ## License
 
-MIT
+Private/Proprietary - All Rights Reserved
