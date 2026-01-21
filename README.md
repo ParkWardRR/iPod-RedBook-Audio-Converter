@@ -4,8 +4,7 @@
 
 Scan your music library, generate a decision spreadsheet (XLSX/TSV/CSV), and build an iPod-ready output library with full control over every album's conversion settings. Features a professional TUI dashboard with real-time progress tracking.
 
-<!-- TODO: Add screenshot of main TUI dashboard during conversion -->
-<!-- ![TUI Dashboard](YOUR_IMAGE_HOST_URL/dashboard.png) -->
+<img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
 ---
 
@@ -16,13 +15,12 @@ Scan your music library, generate a decision spreadsheet (XLSX/TSV/CSV), and bui
 - Analyzes audio formats, sample rates, and bit depths via FFprobe
 - Evaluates metadata quality (tags and artwork) with traffic-light status
 
+<img src="https://i.postimg.cc/7br6NNDb/Scanning.png" width="600" alt="Scanning TUI">
+
 ### Spreadsheet-Based Workflow
 - **XLSX** (Excel) - Full formatting with conditional highlighting and reference sheets
 - **TSV** (Tab-separated) - Edit in any text editor, handles commas in metadata
 - **CSV** (Comma-separated) - Universal compatibility
-
-<!-- TODO: Add screenshot of XLSX plan file in Excel showing album decisions -->
-<!-- ![XLSX Plan](YOUR_IMAGE_HOST_URL/xlsx-plan.png) -->
 
 ### Audio Processing
 - **ALAC** - Lossless Apple codec, preserves or downconverts to Red Book (16-bit/44.1kHz)
@@ -36,9 +34,6 @@ Scan your music library, generate a decision spreadsheet (XLSX/TSV/CSV), and bui
 - Per-album and per-track status
 - Error summary and activity log
 - Compact mode for small terminals
-
-<!-- TODO: Add screenshot of compact TUI mode -->
-<!-- ![Compact TUI](YOUR_IMAGE_HOST_URL/compact-tui.png) -->
 
 ### Performance
 - Parallel scanning with ThreadPoolExecutor (I/O-bound)
@@ -108,9 +103,6 @@ yangon scan --library /path/to/music --plan plan.xlsx
 yangon scan --library /path/to/music --plan plan.tsv
 ```
 
-<!-- TODO: Add screenshot of scan command output -->
-<!-- ![Scan Output](YOUR_IMAGE_HOST_URL/scan-output.png) -->
-
 ### 2. Review and Edit the Plan
 
 Open the generated plan file and set your preferences:
@@ -129,6 +121,8 @@ The XLSX format includes a **Reference** tab with all valid action values and th
 yangon status --plan plan.xlsx
 ```
 
+<img src="https://i.postimg.cc/XX6Jgg3p/Status.png" width="500" alt="Status Output">
+
 Shows summary of albums by tag status, art status, and selected actions.
 
 ### 4. Apply Conversions
@@ -144,8 +138,29 @@ yangon apply --plan plan.xlsx --out /path/to/ipod/Music --dry-run
 yangon apply --plan plan.xlsx --out /path/to/ipod/Music --force
 ```
 
-<!-- TODO: Add screenshot of apply command with progress -->
-<!-- ![Apply Progress](YOUR_IMAGE_HOST_URL/apply-progress.png) -->
+---
+
+## Output Filename Format
+
+Output filenames include tags that indicate the conversion applied and whether a better version exists in your library:
+
+| Tag | Meaning |
+|-----|---------|
+| `[ALAC]` | Lossless at CD quality or below - this IS the best quality |
+| `[ALAC 24-96k→16-44.1k]` | Downconverted from 24-bit/96kHz - **library has better** |
+| `[AAC 256k]` | Lossy AAC at 256kbps from CD source |
+| `[AAC 256k 24-96k]` | Lossy from hi-res source - **library has lossless** |
+| `[MP3]` | Passthrough |
+
+**How to read:** If you see an arrow (→), the library has a higher quality version of that track.
+
+**Examples:**
+```
+01 Harlem [ALAC].m4a                      # CD quality, no better version
+02 Sunshine [ALAC 24-96k→16-44.1k].m4a    # Downconverted from hi-res
+03 Dreams [AAC 256k].m4a                   # Lossy from CD source
+04 Night [AAC 256k 24-96k].m4a            # Lossy - library has lossless
+```
 
 ---
 
@@ -236,7 +251,7 @@ Converted files are organized as:
 {output}/
   {Album Artist}/
     {Year} - {Album}/
-      {Disc}{Track:02} {Title}.m4a
+      {Track:02} {Title} [TAG].m4a
 ```
 
 A `manifest.csv` is generated in the output root with details of all converted tracks.
