@@ -263,9 +263,9 @@ def scan(
 )
 @click.option(
     "--target-sample-rate",
-    type=click.Choice(["44100", "48000"]),
-    default="44100",
-    help="Target sample rate in Hz (44100 default for max compatibility, 48000 optional)",
+    type=click.Choice(["48000", "44100"]),
+    default="48000",
+    help="Target sample rate in Hz (48000 default, 44100 for max compatibility fallback)",
 )
 def apply(
     plan_path: Path,

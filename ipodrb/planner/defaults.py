@@ -50,7 +50,7 @@ def compute_target_parameters(
     source_sample_rate: int,
     source_bit_depth: int | None,
     action: Action,
-    max_sample_rate: int = 44100,
+    max_sample_rate: int = 48000,
 ) -> dict:
     """
     Compute target audio parameters based on source and action.
