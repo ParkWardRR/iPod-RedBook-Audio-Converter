@@ -1,10 +1,10 @@
 # iPod RedBook Audio Converter
 
-An iPod library builder that converts and organizes your music for iPod playback at the practical ceiling of “Red Book” quality: \(16\)-bit / \(44.1\) kHz stereo—so you get maximum iPod-compatible sound without wasting storage on hi‑res files your chain can’t use.
+An iPod library builder that converts and organizes your music for **30-pin iPods and Apple devices** at the practical ceiling of "Red Book" quality: \(16\)-bit / \(44.1\) kHz stereo—so you get maximum iPod-compatible sound without wasting storage on hi‑res files your chain can't use.
 
 <img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
-Whether you listen through an **analog** iPod chain (headphone jack, or a line‑out dock into an amp) or a digital dock chain (for example, an Onkyo ND‑S1 outputting S/PDIF in Red Book format), going above \(16/44.1\) doesn’t improve what the iPod delivers in that Red Book context, but it does make files much larger. This tool targets \(16/44.1\) when needed (it downconverts sources that exceed it), and it never upscales anything—so you meet the limit, but don’t exceed it.
+Whether you listen through an **analog** iPod chain (headphone jack, or a line‑out dock into an amp) or a digital dock chain (for example, an Onkyo ND‑S1 outputting S/PDIF in Red Book format), going above \(16/44.1\) doesn't improve what the iPod delivers in that Red Book context, but it does make files much larger. This tool targets \(16/44.1\) when needed (it downconverts sources that exceed it), and it never upscales anything—so you meet the limit, but don't exceed it.
 
 \(16/44.1\) is just a shorthand for “CD-quality audio,” and it’s two simple knobs:
 
@@ -91,8 +91,8 @@ ipodrb --help
 # XLSX is best if you use Excel/Numbers/LibreOffice
 ipodrb scan --library "/path/to/music" --plan plan.xlsx
 
-# TSV is great if you want plain text
-ipodrb scan --library "/path/to/music" --plan plan.tsv
+# CSV is great if you want plain text
+ipodrb scan --library "/path/to/music" --plan plan.csv
 ```
 
 <img src="https://i.postimg.cc/7br6NNDb/Scanning.png" width="600" alt="Scanning TUI">
@@ -134,15 +134,15 @@ ipodrb apply --plan plan.xlsx --out "/path/to/iPod/Music" --force
 
 ## Output naming (so you can see what happened)
 
-Filenames include tags that show what conversion was applied and whether your main library has a higher-quality source.
+Filenames include tags that show what conversion was applied and the source quality in your library.
 
 | Tag | Meaning |
 |---|---|
-| `[ALAC]` | Lossless at CD quality or below |
-| `[ALAC 24-96k→16-44.1k]` | Downconverted from hi-res lossless (your library has better than the iPod copy) |
-| `[AAC 256k]` | Lossy AAC from CD-quality source |
-| `[AAC 256k 24-96k]` | Lossy AAC from hi-res source (your library has lossless) |
-| `[MP3]` | MP3 passthrough |
+| `[ALAC_PRESERVE_16-44.1k]` | Lossless preserved at original quality (CD quality, no conversion needed) |
+| `[ALAC_Converted_24-96k→16-44.1k]` | Downconverted from hi-res lossless (your library has better quality) |
+| `[AAC_256k_from_16-44.1k]` | Lossy AAC at 256kbps from CD-quality source |
+| `[AAC_256k_from_24-96k]` | Lossy AAC at 256kbps from hi-res source (your library has lossless) |
+| `[MP3_PASS]` | MP3 passthrough (copied as-is) |
 
 ---
 
@@ -170,7 +170,7 @@ ipodrb scan --library PATH --plan PATH [OPTIONS]
 |---|---|
 | `--library PATH` | Music library root (required) |
 | `--plan PATH` | Plan output path (required) |
-| `--format` | Force `xlsx`, `tsv`, or `csv` |
+| `--format` | Force `xlsx` or `csv` |
 | `--recreate` | Discard existing user edits |
 | `--threads N` | Scan threads (default: 32) |
 | `--no-tui` | Disable TUI |
@@ -189,6 +189,7 @@ ipodrb apply --plan PATH --out PATH [OPTIONS]
 | `--fail-fast` | Stop on first error |
 | `--force` | Ignore cache |
 | `--threads N` | Conversion threads (default: CPU count) |
+| `--target-sample-rate` | Target sample rate: `44100` (default) or `48000` |
 | `--no-tui` | Disable TUI |
 | `--compact` | Compact TUI |
 
@@ -213,6 +214,47 @@ ruff check .
 
 This project has only been tested on **macOS Tahoe (latest)** so far. It *may* work on Linux/Windows, but those platforms are currently untested—please open an issue (and include your OS, Python version, and FFmpeg version) if you hit problems.
  
+---
+
+## Sample rate: 44.1 kHz vs 48 kHz
+
+**Default: 16/44.1 (recommended for maximum compatibility)**
+
+The default target is 16-bit / 44.1 kHz because it matches the Red Book CD standard and ensures the best compatibility across all iPod models and firmware versions.
+
+### Can iPods play 48 kHz files?
+
+- Apple's iPod Classic specs mention support for AAC-LC audio "up to 48 kHz" in video contexts, suggesting the hardware can decode 48 kHz audio.
+- Community reports indicate iPod Classic can sync and play 48 kHz ALAC files, though behavior may vary by firmware version and playback path.
+- Files above 48 kHz are typically rejected or downconverted.
+
+### Should you use `--target-sample-rate 48000`?
+
+**For most users: No.** Stick with the default 44.1 kHz for these reasons:
+
+1. **Source is usually 44.1 kHz**: Most music (CDs, commercial downloads) is mastered at 44.1 kHz. Converting 44.1 → 48 kHz adds an unnecessary resampling step with no quality benefit.
+
+2. **Maximum compatibility**: 44.1 kHz is guaranteed to work on all iPod models, firmware versions, and playback paths (headphone jack, line-out, digital dock).
+
+3. **No audible difference**: When listening via the iPod's analog outputs (headphone jack or line-out dock), there's no perceptible quality difference between 44.1 and 48 kHz.
+
+**When 48 kHz makes sense:**
+
+- Your source files are **already at 48 kHz** (common for video soundtracks or certain pro-audio formats), and you want to avoid the 48 → 44.1 conversion step.
+- You've verified that your specific iPod model and playback setup handles 48 kHz files reliably.
+
+**Example:**
+
+```bash
+# Default (44.1 kHz) - recommended for music libraries
+ipodrb apply --plan plan.xlsx --out /output
+
+# 48 kHz option - only if your sources are 48 kHz and iPod is verified compatible
+ipodrb apply --plan plan.xlsx --out /output --target-sample-rate 48000
+```
+
+> **Note:** For 5th gen iPod Classic specifically, 44.1 kHz is the safest choice to avoid potential playback issues like skips or stutters.
+
 ---
 
 ## Red Book (CD-DA) explained

@@ -50,6 +50,7 @@ def compute_target_parameters(
     source_sample_rate: int,
     source_bit_depth: int | None,
     action: Action,
+    max_sample_rate: int = 44100,
 ) -> dict:
     """
     Compute target audio parameters based on source and action.
@@ -57,13 +58,14 @@ def compute_target_parameters(
     Never-upconvert rules:
     - Never increase sample rate
     - Never increase bit depth
-    - Downconvert to 44.1kHz if source > 44.1kHz
+    - Downconvert to max_sample_rate if source > max_sample_rate
     - Downconvert to 16-bit if source > 16-bit (with dither)
 
     Args:
         source_sample_rate: Source sample rate in Hz
         source_bit_depth: Source bit depth (None for lossy)
         action: Resolved conversion action
+        max_sample_rate: Maximum target sample rate (44100 or 48000)
 
     Returns:
         Dict with target_sample_rate, target_bit_depth, apply_dither
@@ -73,8 +75,7 @@ def compute_target_parameters(
     target_bd = source_bit_depth
     apply_dither = False
 
-    # iPod max: 44.1kHz/16-bit for optimal compatibility
-    max_sample_rate = 44100
+    # iPod max: 16-bit, sample rate configurable (44.1kHz default, 48kHz optional)
     max_bit_depth = 16
 
     # Downconvert sample rate if needed
@@ -91,7 +92,7 @@ def compute_target_parameters(
             # Lossy source being converted to ALAC
             target_bd = 16
 
-        # ALAC_16_44 forces 44.1/16 even for lower sources
+        # ALAC_16_44 forces max/16 even for lower sources
         # But we never upconvert, so preserve lower values
         if action == Action.ALAC_16_44:
             target_sr = min(source_sample_rate, max_sample_rate)
@@ -101,7 +102,7 @@ def compute_target_parameters(
                 target_bd = 16
 
     elif action == Action.AAC:
-        # AAC always outputs at 44.1kHz (iPod optimal)
+        # AAC always outputs at max_sample_rate (iPod optimal)
         target_sr = min(source_sample_rate, max_sample_rate)
         # Bit depth not applicable for lossy
         target_bd = None

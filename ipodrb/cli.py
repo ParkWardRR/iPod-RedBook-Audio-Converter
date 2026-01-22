@@ -17,15 +17,13 @@ from ipodrb.models.status import ArtStatus, TagStatus
 console = Console()
 
 # Supported plan file formats
-PLAN_FORMATS = ["xlsx", "tsv", "csv"]
+PLAN_FORMATS = ["xlsx", "csv"]
 
 
 def detect_plan_format(path: Path) -> str:
     """Detect plan format from file extension."""
     suffix = path.suffix.lower()
-    if suffix == ".tsv":
-        return "tsv"
-    elif suffix == ".csv":
+    if suffix == ".csv":
         return "csv"
     elif suffix in (".xlsx", ".xls"):
         return "xlsx"
@@ -35,9 +33,7 @@ def detect_plan_format(path: Path) -> str:
 
 def get_plan_path(base_path: Path, fmt: str) -> Path:
     """Get plan file path with appropriate extension."""
-    if fmt == "tsv":
-        return base_path.with_suffix(".tsv")
-    elif fmt == "csv":
+    if fmt == "csv":
         return base_path.with_suffix(".csv")
     else:
         return base_path.with_suffix(".xlsx")
@@ -62,7 +58,7 @@ def cli():
     """
     iPod RedBook Audio Converter
 
-    Scan a music library, generate a plan file (XLSX/TSV/CSV),
+    Scan a music library, generate a plan file (XLSX/CSV),
     then build an iPod-ready output library with full control
     over conversion settings.
     """
@@ -83,7 +79,7 @@ def cli():
     "plan_path",
     type=click.Path(path_type=Path),
     required=True,
-    help="Path to output plan file (XLSX, TSV, or CSV)",
+    help="Path to output plan file (XLSX or CSV)",
 )
 @click.option(
     "--format",
@@ -134,11 +130,10 @@ def scan(
     Scan music library and generate/update plan file.
 
     Walks the library directory, analyzes each album's tracks,
-    and creates a plan file (XLSX, TSV, or CSV) with conversion options.
+    and creates a plan file (XLSX or CSV) with conversion options.
 
     Examples:
         ipodrb scan -l /music -p plan.xlsx       # XLSX format (Excel)
-        ipodrb scan -l /music -p plan.tsv        # TSV format (text editor)
         ipodrb scan -l /music -p plan.csv        # CSV format (text editor)
     """
     if not check_ffmpeg():
@@ -150,9 +145,7 @@ def scan(
 
     # Determine format
     fmt = plan_format or detect_plan_format(plan_path)
-    if fmt == "tsv" and plan_path.suffix.lower() != ".tsv":
-        plan_path = plan_path.with_suffix(".tsv")
-    elif fmt == "csv" and plan_path.suffix.lower() != ".csv":
+    if fmt == "csv" and plan_path.suffix.lower() != ".csv":
         plan_path = plan_path.with_suffix(".csv")
     elif fmt == "xlsx" and plan_path.suffix.lower() not in (".xlsx", ".xls"):
         plan_path = plan_path.with_suffix(".xlsx")
@@ -207,10 +200,9 @@ def scan(
     if albums:
         console.print(f"\n[blue]Writing {fmt.upper()} plan...[/blue]")
 
-        if fmt in ("tsv", "csv"):
+        if fmt == "csv":
             from ipodrb.csv_io.writer import write_csv_plan
-            use_tsv = fmt == "tsv"
-            write_csv_plan(albums, plan_path, library, preserve_user_edits=not recreate, use_tsv=use_tsv)
+            write_csv_plan(albums, plan_path, library, preserve_user_edits=not recreate, use_tsv=False)
         else:
             from ipodrb.xlsx.writer import write_xlsx
             write_xlsx(albums, plan_path, library, preserve_user_edits=not recreate)
@@ -269,6 +261,12 @@ def scan(
     is_flag=True,
     help="Use compact TUI mode (for small terminals)",
 )
+@click.option(
+    "--target-sample-rate",
+    type=click.Choice(["44100", "48000"]),
+    default="44100",
+    help="Target sample rate in Hz (44100 default for max compatibility, 48000 optional)",
+)
 def apply(
     plan_path: Path,
     out: Path,
@@ -278,16 +276,17 @@ def apply(
     threads: int | None,
     no_tui: bool,
     compact: bool,
+    target_sample_rate: str,
 ):
     """
     Apply plan decisions to build output library.
 
-    Reads the plan file (XLSX, TSV, or CSV), resolves actions for each album,
+    Reads the plan file (XLSX or CSV), resolves actions for each album,
     and converts/copies tracks to the output directory.
 
     Examples:
         ipodrb apply --plan plan.xlsx --out /output
-        ipodrb apply --plan plan.tsv --out /output
+        ipodrb apply --plan plan.csv --out /output
     """
     if not check_ffmpeg():
         console.print("[red]Error: FFmpeg not found. Please install FFmpeg.[/red]")
@@ -310,6 +309,7 @@ def apply(
         force=force,
         threads=threads,
         show_tui=not no_tui,
+        target_sample_rate=int(target_sample_rate),
     )
     global_config = Config()
 
@@ -338,7 +338,7 @@ def apply(
     )
 
     # Read decisions based on format
-    if fmt in ("tsv", "csv"):
+    if fmt == "csv":
         from ipodrb.csv_io.reader import get_csv_decisions, get_csv_library_root
         decisions_list = get_csv_decisions(plan_path)
         library_root = get_csv_library_root(plan_path)
@@ -478,14 +478,14 @@ def apply(
     "plan_path",
     type=click.Path(exists=True, path_type=Path),
     required=True,
-    help="Path to plan file (XLSX, TSV, or CSV)",
+    help="Path to plan file (XLSX or CSV)",
 )
 def status(plan_path: Path):
     """
     Display summary from plan file.
 
     Shows album counts, status distribution, and action summary.
-    Works with XLSX, TSV, and CSV formats.
+    Works with XLSX and CSV formats.
     """
     plan_path = plan_path.resolve()
     fmt = detect_plan_format(plan_path)
@@ -496,8 +496,8 @@ def status(plan_path: Path):
     art_counts: dict[str, int] = {}
     action_counts: dict[str, int] = {}
 
-    if fmt in ("tsv", "csv"):
-        # CSV/TSV format
+    if fmt == "csv":
+        # CSV format
         from ipodrb.csv_io.reader import get_csv_summary
         summary = get_csv_summary(plan_path)
 
