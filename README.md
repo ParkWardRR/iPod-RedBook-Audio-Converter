@@ -189,7 +189,7 @@ ipodrb apply --plan PATH --out PATH [OPTIONS]
 | `--fail-fast` | Stop on first error |
 | `--force` | Ignore cache |
 | `--threads N` | Conversion threads (default: CPU count) |
-| `--target-sample-rate` | Target sample rate: `44100` (default) or `48000` |
+| `--target-sample-rate` | Target sample rate: `48000` (default) or `44100` |
 | `--no-tui` | Disable TUI |
 | `--compact` | Compact TUI |
 
@@ -216,11 +216,16 @@ This project has only been tested on **macOS Tahoe (latest)** so far. It *may* w
  
 ---
 
-## Sample rate: 44.1 kHz vs 48 kHz
+## Sample rate: 48 kHz vs 44.1 kHz
 
-**Default: 16/44.1 (recommended for maximum compatibility)**
+**Default: 16/48 (48 kHz ceiling)**
 
-The default target is 16-bit / 44.1 kHz because it matches the Red Book CD standard and ensures the best compatibility across all iPod models and firmware versions.
+The default target is 16-bit / 48 kHz. This preserves 48 kHz sources without resampling while still downconverting anything above 48 kHz.
+
+### Which sample rate should you use?
+
+- **If your files originate as 44.1 kHz** (CD rips, most music releases): use `--target-sample-rate 44100` to avoid unnecessary resampling.
+- **If your files originate as 48 kHz** (video sources, some pro-audio): keeping 16/48 (the default) is reasonable and should play on many iPod Classics. If you hit skipping or odd behavior, `--target-sample-rate 44100` is the compatibility fallback.
 
 ### Can iPods play 48 kHz files?
 
@@ -228,32 +233,25 @@ The default target is 16-bit / 44.1 kHz because it matches the Red Book CD stand
 - Community reports indicate iPod Classic can sync and play 48 kHz ALAC files, though behavior may vary by firmware version and playback path.
 - Files above 48 kHz are typically rejected or downconverted.
 
-### Should you use `--target-sample-rate 48000`?
+### When to use `--target-sample-rate 44100`
 
-**For most users: No.** Stick with the default 44.1 kHz for these reasons:
+Use the 44.1 kHz option when:
 
-1. **Source is usually 44.1 kHz**: Most music (CDs, commercial downloads) is mastered at 44.1 kHz. Converting 44.1 → 48 kHz adds an unnecessary resampling step with no quality benefit.
-
-2. **Maximum compatibility**: 44.1 kHz is guaranteed to work on all iPod models, firmware versions, and playback paths (headphone jack, line-out, digital dock).
-
-3. **No audible difference**: When listening via the iPod's analog outputs (headphone jack or line-out dock), there's no perceptible quality difference between 44.1 and 48 kHz.
-
-**When 48 kHz makes sense:**
-
-- Your source files are **already at 48 kHz** (common for video soundtracks or certain pro-audio formats), and you want to avoid the 48 → 44.1 conversion step.
-- You've verified that your specific iPod model and playback setup handles 48 kHz files reliably.
+1. **Your library is mostly CD rips**: CD audio is 44.1 kHz—converting to 48 kHz adds an unnecessary resampling step.
+2. **Maximum compatibility is needed**: 44.1 kHz is guaranteed to work on all iPod models, firmware versions, and playback paths.
+3. **You experience playback issues**: If you hear skips, stutters, or odd behavior with 48 kHz files, fall back to 44.1 kHz.
 
 **Example:**
 
 ```bash
-# Default (44.1 kHz) - recommended for music libraries
+# Default (48 kHz ceiling) - good for mixed libraries or 48 kHz sources
 ipodrb apply --plan plan.xlsx --out /output
 
-# 48 kHz option - only if your sources are 48 kHz and iPod is verified compatible
-ipodrb apply --plan plan.xlsx --out /output --target-sample-rate 48000
+# 44.1 kHz option - for CD-quality libraries or maximum compatibility
+ipodrb apply --plan plan.xlsx --out /output --target-sample-rate 44100
 ```
 
-> **Note:** For 5th gen iPod Classic specifically, 44.1 kHz is the safest choice to avoid potential playback issues like skips or stutters.
+> **Note:** For 5th gen iPod Classic, if you experience playback issues with 48 kHz files, use `--target-sample-rate 44100` as the compatibility fallback.
 
 ---
 

@@ -66,7 +66,7 @@ class ApplyConfig(BaseModel):
     allowed_aac_bitrates: set[int] = Field(
         default_factory=lambda: {128, 192, 256, 320}
     )
-    target_sample_rate: int = 44100  # Target sample rate (44100 or 48000)
+    target_sample_rate: int = 48000  # Target sample rate (48000 default, 44100 for max compatibility)
 
     # Output path template
     path_template: str = "{album_artist}/{year} - {album}/{disc_prefix}{track:02d} {title}"
