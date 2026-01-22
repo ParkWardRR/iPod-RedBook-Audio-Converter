@@ -101,25 +101,22 @@ def generate_conversion_tag(
     better version in the library (indicated by source specs with arrow).
 
     Returns tags like:
-    - [ALAC] - lossless at CD quality or below, no downconversion
-    - [ALAC 24-96k→16-44.1k] - downconverted from hi-res (library has better)
-    - [AAC 256k] - lossy AAC at 256kbps
-    - [AAC 256k 24-96k] - lossy from hi-res source (library has lossless)
-    - [MP3] - passthrough
+    - [ALAC_PRESERVE] - lossless preserved at original quality (CD quality or below, no downconversion)
+    - [ALAC_Converted_24-96k→16-44.1k] - downconverted from hi-res (library has better)
+    - [AAC_256k_from_16-44.1k] - lossy AAC from CD-quality source
+    - [AAC_256k_from_24-96k] - lossy AAC from hi-res source (library has lossless)
+    - [MP3_PASS] - MP3 passthrough
     """
     src_bd = source_bit_depth or 16
 
     if action == Action.PASS_MP3:
-        return "[MP3]"
+        return "[MP3_PASS]"
 
     if action == Action.AAC:
         bitrate = aac_bitrate or 256
-        # For AAC, show source specs if hi-res (indicates better version exists)
-        is_hires_source = source_sample_rate > 44100 or src_bd > 16
-        if is_hires_source:
-            src_specs = _format_specs(source_sample_rate, src_bd)
-            return f"[AAC {bitrate}k {src_specs}]"
-        return f"[AAC {bitrate}k]"
+        # Always show source specs for AAC to indicate what the library has
+        src_specs = _format_specs(source_sample_rate, src_bd)
+        return f"[AAC_{bitrate}k_from_{src_specs}]"
 
     # ALAC actions
     if action in (Action.ALAC_PRESERVE, Action.ALAC_16_44):
@@ -133,10 +130,12 @@ def generate_conversion_tag(
             # Show source → target to indicate better version exists in library
             src_specs = _format_specs(source_sample_rate, src_bd)
             tgt_specs = _format_specs(target_sample_rate, tgt_bd)
-            return f"[ALAC {src_specs}→{tgt_specs}]"
+            return f"[ALAC_Converted_{src_specs}→{tgt_specs}]"
         else:
             # No downconversion - this IS the best quality
-            return "[ALAC]"
+            # Show the actual specs being preserved
+            preserve_specs = _format_specs(source_sample_rate, src_bd)
+            return f"[ALAC_PRESERVE_{preserve_specs}]"
 
     return ""
 
@@ -270,6 +269,7 @@ def resolve_track_jobs(
             track.sample_rate,
             track.bit_depth,
             action,
+            max_sample_rate=config.target_sample_rate,
         )
 
         # Determine target codec
