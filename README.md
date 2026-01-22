@@ -1,23 +1,17 @@
 # iPod RedBook Audio Converter
 
-Build an iPod library that sounds as good as possible for **Red Book** playback (16-bit / 44.1kHz) without wasting space.
-
-If you use an iPod via a digital dock like the Onkyo ND-S1 (Red Book output), hi‑res lossless files (24 and 32 bit) don’t improve playback quality but do take up additional space on your iPod. This tool keeps your iPod library within iPod/Red Book limits by **downscaling lossless sources (e.g., FLAC/hi‑res) when needed**, and never upscales nothing.
+An iPod library builder that converts and organizes your music for iPod playback at the practical ceiling of “Red Book” quality: \(16\)-bit / \(44.1\) kHz stereo—so you get maximum iPod-compatible sound without wasting storage on hi‑res files your chain can’t use.
 
 <img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
----
+Whether you listen through an **analog** iPod chain (headphone jack, or a line‑out dock into an amp) or a digital dock chain (for example, an Onkyo ND‑S1 outputting S/PDIF in Red Book format), going above \(16/44.1\) doesn’t improve what the iPod delivers in that Red Book context, but it does make files much larger. This tool targets \(16/44.1\) when needed (it downconverts sources that exceed it), and it never upscales anything—so you meet the limit, but don’t exceed it.
 
-## What it does
+\(16/44.1\) is just a shorthand for “CD-quality audio,” and it’s two simple knobs:
 
-You point it at your music library, it produces a per-album “plan” file (XLSX/TSV/CSV), and then it builds an iPod-ready output library based on that plan.
+- \(16\)-bit = how many “volume steps” each snapshot of the waveform can use (more steps = finer detail).
+- \(44.1\) kHz = how many snapshots per second are taken (\(44{,}100\) snapshots every second).
 
-It’s designed for people who want:
-- Top-quality iPod playback (ALAC 16/44.1 where appropriate)
-- Smaller files when hi‑res would be wasted on an iPod/Red Book chain
-- Full control per album (keep lossless, choose AAC bitrate, passthrough MP3, or skip)
-
----
+This project is backed by **FFmpeg**, so it can ingest modern/odd formats and channel layouts (including multichannel sources) and convert them into iPod-friendly files (for example, downmixing to stereo when appropriate), while still enforcing the “don’t exceed \(16/44.1\)” goal for Red Book-focused playback and storage efficiency.
 
 ## Key rules (important)
 
