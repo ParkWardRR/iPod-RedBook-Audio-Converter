@@ -39,8 +39,11 @@ def build_alac_command(
     """
     Build FFmpeg command for ALAC encoding.
 
-    Uses soxr resampler for high-quality sample rate conversion.
-    Applies triangular dither when reducing bit depth.
+    Audiophile-quality conversion:
+    - Uses soxr resampler (high precision) for sample rate conversion
+    - Applies triangular high-pass dither when reducing bit depth
+    - Applies headroom reduction for multichannel->stereo downmix to prevent clipping
+    - Never upscales (sample rate or bit depth)
     """
     cmd = [
         ffmpeg_path,
@@ -52,23 +55,39 @@ def build_alac_command(
     # Build audio filter chain
     filters = []
 
-    # Check if we need to resample
-    needs_resample = job.target_sample_rate != 48000  # Assume we might need it
-    needs_dither = job.apply_dither
+    # 1. Multichannel to stereo downmix with headroom protection
+    # Apply -3dB headroom to prevent clipping when downmixing surround to stereo
+    if job.source_channels > 2:
+        filters.append("volume=-3dB")
 
+    # 2. Check if we need to resample (source != target sample rate)
+    needs_resample = job.source_sample_rate != job.target_sample_rate
+
+    # 3. Check if we need dithering (reducing bit depth)
+    source_bd = job.source_bit_depth or 16
+    target_bd = job.target_bit_depth or 16
+    needs_dither = source_bd > target_bd
+
+    # Build aresample filter for high-quality conversion
+    # Use soxr even for same-rate conversion if we need dithering
     if needs_resample or needs_dither:
-        # Use soxr for high-quality resampling with optional dither
+        # Use soxr resampler with high precision
+        # dither_method=triangular_hp provides high-pass triangular dither
+        # which is preferred for audio to shape noise away from sensitive frequencies
         filter_parts = [
             f"aresample={job.target_sample_rate}",
             "resampler=soxr",
-            "precision=28",
+            "precision=28",  # Maximum precision
         ]
         if needs_dither:
-            filter_parts.append("dither_method=triangular")
+            filter_parts.append("dither_method=triangular_hp")
         filters.append(":".join(filter_parts))
 
     if filters:
         cmd.extend(["-af", ",".join(filters)])
+
+    # Stereo output for iPod compatibility
+    cmd.extend(["-ac", "2"])
 
     # Output settings
     cmd.extend([
@@ -96,8 +115,8 @@ def build_aac_command(
     """
     Build FFmpeg command for AAC encoding.
 
-    Uses AAC-LC profile for maximum compatibility.
-    Always outputs 44.1kHz for iPod optimization.
+    Uses AAC-LC profile for maximum iPod compatibility.
+    Applies proper resampling and multichannel downmix with headroom.
     """
     cmd = [
         ffmpeg_path,
@@ -106,11 +125,25 @@ def build_aac_command(
         "-vn",
     ]
 
-    # AAC always gets resampled to target (usually 44.1kHz)
-    filters = [
-        f"aresample={job.target_sample_rate}:resampler=soxr:precision=28"
-    ]
-    cmd.extend(["-af", ",".join(filters)])
+    # Build filter chain
+    filters = []
+
+    # 1. Multichannel to stereo downmix with headroom protection
+    if job.source_channels > 2:
+        filters.append("volume=-3dB")
+
+    # 2. Resample if needed (use soxr for high quality)
+    needs_resample = job.source_sample_rate != job.target_sample_rate
+    if needs_resample:
+        filters.append(
+            f"aresample={job.target_sample_rate}:resampler=soxr:precision=28"
+        )
+
+    if filters:
+        cmd.extend(["-af", ",".join(filters)])
+
+    # Stereo output
+    cmd.extend(["-ac", "2"])
 
     # Get bitrate
     bitrate = job.aac_bitrate_kbps or 256
