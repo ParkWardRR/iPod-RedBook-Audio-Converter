@@ -4,17 +4,20 @@ from ipodrb.models.album import Album, AudioFormat
 from ipodrb.models.plan import Action
 
 
-def compute_default_action(album: Album) -> Action:
+def compute_default_action(album: Album, max_sample_rate: int = 48000) -> Action:
     """
     Compute the default conversion action for an album.
 
     Rules:
     1. If album is MP3-only: PASS_MP3 (pass through unchanged)
-    2. If album contains lossless formats (FLAC/WAV/AIFF/ALAC): ALAC_PRESERVE
+    2. If album contains lossless formats (FLAC/WAV/AIFF/ALAC):
+       - If hi-res (bit depth > 16 OR sample rate > max_sample_rate): ALAC_16_44
+       - Otherwise: ALAC_PRESERVE
     3. Otherwise (lossy-only, mixed): AAC
 
     Args:
         album: Album to compute default for
+        max_sample_rate: Maximum target sample rate (44100 or 48000)
 
     Returns:
         Default Action enum
@@ -40,6 +43,15 @@ def compute_default_action(album: Album) -> Action:
     has_lossless = bool(album.source_formats & lossless_formats)
 
     if has_lossless:
+        # Check if hi-res: bit depth > 16 OR sample rate > max ceiling
+        is_hi_res = False
+        if album.max_bit_depth and album.max_bit_depth > 16:
+            is_hi_res = True
+        if album.max_sample_rate > max_sample_rate:
+            is_hi_res = True
+
+        if is_hi_res:
+            return Action.ALAC_16_44
         return Action.ALAC_PRESERVE
 
     # Fallback for lossy-only albums (e.g., AAC, OGG, OPUS)
