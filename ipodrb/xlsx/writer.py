@@ -180,6 +180,7 @@ def _write_summary_sheet(wb: Workbook, albums: list[Album], library_root: Path) 
         ("", ""),
         ("Default Actions", ""),
         ("alac_preserve", action_counts[Action.ALAC_PRESERVE]),
+        ("alac_16_44 (hi-res downconvert)", action_counts[Action.ALAC_16_44]),
         ("aac", action_counts[Action.AAC]),
         ("pass_mp3", action_counts[Action.PASS_MP3]),
     ]
