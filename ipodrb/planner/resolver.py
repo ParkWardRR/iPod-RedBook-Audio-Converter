@@ -326,6 +326,11 @@ def resolve_track_jobs(
             album_id=album.album_id,
             source_path=track.path,
             output_path=output_path,
+            # Source parameters for FFmpeg
+            source_sample_rate=track.sample_rate,
+            source_bit_depth=track.bit_depth,
+            source_channels=track.channels,
+            # Processing parameters
             action=action,
             target_codec=target_codec,
             target_sample_rate=params["target_sample_rate"],

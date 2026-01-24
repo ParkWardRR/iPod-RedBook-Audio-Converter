@@ -1,23 +1,28 @@
 # iPod RedBook Audio Converter
 
-An iPod library builder that converts and organizes your music for **30-pin iPods and Apple devices** at the practical ceiling of "Red Book" quality: \(16\)-bit / \(44.1\) kHz stereo—so you get maximum iPod-compatible sound without wasting storage on hi‑res files your chain can't use.
+An iPod library builder that converts and organizes your music for **30-pin iPods and Apple devices** at the practical **"iPod-safe ceiling"**: 16-bit / up to 48 kHz stereo—so you get maximum iPod-compatible sound without wasting storage on hi‑res files your device can't use.
 
 <img src="https://i.postimg.cc/4nRd11ZY/Conversion.png" width="600" alt="Conversion TUI">
 
-Whether you listen through an **analog** iPod chain (headphone jack, or a line‑out dock into an amp) or a digital dock chain (for example, an Onkyo ND‑S1 outputting S/PDIF in Red Book format), going above \(16/44.1\) doesn't improve what the iPod delivers in that Red Book context, but it does make files much larger. This tool targets \(16/44.1\) when needed (it downconverts sources that exceed it), and it never upscales anything—so you meet the limit, but don't exceed it.
+Whether you listen through an **analog** iPod chain (headphone jack, or a line‑out dock into an amp) or a digital dock chain (for example, an Onkyo ND‑S1 outputting S/PDIF), going above 16-bit or 48 kHz doesn't improve what the iPod delivers, but it does make files much larger. This tool enforces the iPod-safe ceiling—downconverting hi-res sources only when needed—while **never upscaling** anything.
 
-\(16/44.1\) is just a shorthand for “CD-quality audio,” and it’s two simple knobs:
+**Two simple knobs:**
 
-- \(16\)-bit = how many “volume steps” each snapshot of the waveform can use (more steps = finer detail).
-- \(44.1\) kHz = how many snapshots per second are taken (\(44{,}100\) snapshots every second).
+- **16-bit** = how many "volume steps" each snapshot of the waveform can use (more steps = finer detail).
+- **44.1–48 kHz** = how many snapshots per second are taken (44,100 or 48,000 snapshots every second).
 
-This project is backed by **FFmpeg**, so it can ingest modern/odd formats and channel layouts (including multichannel sources) and convert them into iPod-friendly files (for example, downmixing to stereo when appropriate), while still enforcing the “don’t exceed \(16/44.1\)” goal for Red Book-focused playback and storage efficiency.
+This project is backed by **FFmpeg**, so it can ingest modern/odd formats and channel layouts (including multichannel sources) and convert them into iPod-friendly files (downmixing to stereo when needed, with proper headroom to prevent clipping).
 
 ## Key rules (important)
 
-- No upscaling: if a track is 16/44.1 already, it stays there (no fake “hi-res”).
-- Downscale only when needed: if the source exceeds iPod/Red Book limits, it is downconverted to 16/44.1 (with proper dithering).
-- Output stays iPod-friendly:
+- **No upscaling**: if a track is already within the iPod-safe ceiling (16-bit, ≤48 kHz), it stays there. No fake "hi-res" inflation.
+- **Downscale only when needed**: hi-res sources (bit depth >16 or sample rate >48 kHz) are automatically downconverted to the ceiling, with proper dithering.
+- **Audiophile-quality conversion**:
+  - High-quality resampling via **soxr** (SoX Resampler)
+  - **Triangular high-pass dither** when reducing bit depth (24→16)
+  - **Headroom protection** (−3 dB) when downmixing multichannel to stereo
+- **Smart defaults**: hi-res albums are automatically flagged for downconversion during scan—no manual spreadsheet edits required.
+- **Output stays iPod-friendly**:
   - ALAC for lossless
   - AAC for space savings
   - MP3 passthrough when you already have MP3s
@@ -97,9 +102,20 @@ ipodrb scan --library "/path/to/music" --plan plan.csv
 
 <img src="https://i.postimg.cc/7br6NNDb/Scanning.png" width="600" alt="Scanning TUI">
 
-### 2) Edit the plan (choose what happens per album)
+### 2) Edit the plan (optional—smart defaults already set)
 
-Open the plan and set the album actions you want:
+The scan automatically assigns optimal defaults based on each album's audio specs:
+
+| Source Quality | Auto-assigned Default |
+|---|---|
+| MP3 (any) | `PASS_MP3` (passthrough, no transcoding) |
+| Lossless, 16-bit, ≤48 kHz | `ALAC_PRESERVE` (already iPod-safe) |
+| Lossless, 24-bit or >48 kHz | `ALAC_16_44` (auto-downconvert to ceiling) |
+| Lossy non-MP3 (AAC, OGG, etc.) | `AAC` (re-encode to AAC-LC) |
+
+**For most users, no edits are needed**—hi-res albums are automatically flagged for downconversion.
+
+If you want to override defaults, open the plan and set:
 
 | Column | What it controls |
 |---|---|
@@ -258,7 +274,7 @@ ipodrb apply --plan plan.xlsx --out /output --target-sample-rate 44100
 ## Red Book (CD-DA) explained
 
 > [!TIP]
-> In this repo, "Red Book" means **CD-quality audio**: 16-bit / 44.1 kHz PCM—the baseline format defined for audio CDs.
+> In this repo, "Red Book" is used loosely to mean the **iPod-safe ceiling**: 16-bit PCM at up to 48 kHz. True Red Book (CD-DA) is 16-bit / 44.1 kHz, but iPod Classic and similar devices support up to 48 kHz. We default to preserving 48 kHz sources to avoid unnecessary resampling, while enforcing a hard ceiling that prevents pointless hi-res storage.
 
 ### What "Red Book" is
 "Red Book" is the colloquial name for the original **Compact Disc Digital Audio (CD‑DA)** specification created by Philips and Sony and published in 1980.

@@ -38,6 +38,11 @@ class TrackJob(BaseModel):
     source_path: Path
     output_path: Path
 
+    # Source parameters (for FFmpeg to determine conversion needs)
+    source_sample_rate: int
+    source_bit_depth: int | None
+    source_channels: int = 2
+
     # Processing parameters
     action: Action
     target_codec: str  # "alac", "aac", "copy"
